@@ -16,23 +16,16 @@ export function AudioRecorder({ onRecordingComplete }) {
   useEffect(() => {
     if (hasRecordedAudio && mediaBlobUrl && !audioBase64) {
       const processRecording = async () => {
-        try {
-          // Fetch the blob from mediaBlobUrl
-          const response = await fetch(mediaBlobUrl);
-          const audioBlob = await response.blob();
+        // Fetch the blob from mediaBlobUrl
+        const response = await fetch(mediaBlobUrl);
+        const audioBlob = await response.blob();
 
-          // Convert blob to base64
-          const base64data = await convertToBase64(audioBlob);
-          setAudioBase64(base64data);
+        // Convert blob to base64
+        const base64data = await convertToBase64(audioBlob);
+        setAudioBase64(base64data);
 
-          // Call the callback with the base64 data
-          if (onRecordingComplete) {
-            onRecordingComplete(base64data);
-          }
-        } catch (error) {
-          console.error("Failed to convert audio to base64:", error);
-          setError("Failed to process recording. Please try again.");
-        }
+        // Call the callback with the base64 data
+        if (onRecordingComplete) onRecordingComplete(base64data);
       };
 
       processRecording();
@@ -61,9 +54,7 @@ export function AudioRecorder({ onRecordingComplete }) {
       setAudioBase64(base64);
 
       // Call the callback with the base64 data
-      if (onRecordingComplete) {
-        onRecordingComplete(base64);
-      }
+      if (onRecordingComplete) onRecordingComplete(base64);
     } catch (error) {
       console.error("Failed to process audio file:", error);
       setError("Failed to process audio file. Please try again.");
@@ -107,6 +98,8 @@ export function AudioRecorder({ onRecordingComplete }) {
             {isRecording && (
               <div className="text-sm text-red-600 animate-pulse">
                 Recording... Click "Stop Recording" when finished.
+                <br />
+                Make sure to say the location!
               </div>
             )}
           </div>

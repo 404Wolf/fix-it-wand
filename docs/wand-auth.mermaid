@@ -1,0 +1,10 @@
+sequenceDiagram
+    actor User
+    participant Website
+    participant Wand
+
+    Website->>User: Valid registration keyphrase
+    User->>Wand: Speak registration keyphrase
+    Wand->>Website: Attempt to authenticate with keyphrase
+    Website->>Wand: Give wand permanent JWT
+

@@ -1,5 +1,5 @@
 import { Hono } from "npm:hono";
-import { logger } from "../index.http.ts";
+import { backendLogger } from "../index.http.ts";
 import { JWT_SECRET } from "../consts.tsx";
 import { jwt } from "npm:hono/jwt";
 import { db } from "../db/mod_http.ts";
@@ -20,7 +20,7 @@ userWorkordersRoute.get("/", async (c) => {
   const userEmail = payload.email;
   const user = await getUserByEmail(userEmail);
 
-  logger.info(
+  backendLogger.info(
     { userId: user.id, email: userEmail },
     "Fetching user workorders",
   );
@@ -42,7 +42,10 @@ userWorkordersRoute.get("/", async (c) => {
       workorders,
     }, 200);
   } catch (error) {
-    logger.error({ error, userId: user.id }, "Error fetching user workorders");
+    backendLogger.error(
+      { error, userId: user.id },
+      "Error fetching user workorders",
+    );
 
     return c.json({
       success: false,
@@ -57,7 +60,7 @@ userWorkordersRoute.post("/", async (c) => {
   const userEmail = payload.email;
   const user = await getUserByEmail(userEmail);
 
-  logger.info(
+  backendLogger.info(
     { user_id: user.id, email: userEmail },
     "Creating new workorder",
   );
@@ -95,7 +98,10 @@ userWorkordersRoute.post("/", async (c) => {
       workorder: workorder[0],
     }, 201);
   } catch (error) {
-    logger.error({ error, user_id: user.id }, "Error creating workorder");
+    backendLogger.error(
+      { error, user_id: user.id },
+      "Error creating workorder",
+    );
 
     return c.json({
       success: false,
@@ -111,7 +117,7 @@ userWorkordersRoute.post("/:id/send", async (c) => {
   const user = await getUserByEmail(userEmail);
   const workorderId = c.req.param("id");
 
-  logger.info(
+  backendLogger.info(
     { userId: user.id, workorderId, email: userEmail },
     "Sending workorder",
   );
@@ -154,7 +160,7 @@ userWorkordersRoute.post("/:id/send", async (c) => {
       workorder: updatedWorkorder[0],
     }, 200);
   } catch (error) {
-    logger.error(
+    backendLogger.error(
       { error, userId: user.id, workorderId },
       "Error sending workorder",
     );
@@ -173,7 +179,7 @@ userWorkordersRoute.post("/:id/complete", async (c) => {
   const user = await getUserByEmail(userEmail);
   const workorderId = c.req.param("id");
 
-  logger.info(
+  backendLogger.info(
     { userId: user.id, workorderId, email: userEmail },
     "Marking workorder as completed",
   );
@@ -209,7 +215,7 @@ userWorkordersRoute.post("/:id/complete", async (c) => {
       workorder: updatedWorkorder[0],
     }, 200);
   } catch (error) {
-    logger.error(
+    backendLogger.error(
       { error, userId: user.id, workorderId },
       "Error completing workorder",
     );
@@ -228,7 +234,7 @@ userWorkordersRoute.delete("/:id", async (c) => {
   const user = await getUserByEmail(userEmail);
   const workorderId = c.req.param("id");
 
-  logger.info(
+  backendLogger.info(
     { userId: user.id, workorderId, email: userEmail },
     "Deleting workorder",
   );
@@ -262,7 +268,7 @@ userWorkordersRoute.delete("/:id", async (c) => {
       message: "Workorder deleted successfully",
     }, 200);
   } catch (error) {
-    logger.error(
+    backendLogger.error(
       { error, userId: user.id, workorderId },
       "Error deleting workorder",
     );

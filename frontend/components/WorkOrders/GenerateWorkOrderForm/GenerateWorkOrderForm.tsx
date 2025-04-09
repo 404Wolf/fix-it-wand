@@ -44,7 +44,7 @@ export function GenerateWorkorderForm({ onNew }: DemoFormProps) {
 
     try {
       // Submit work order with base64 encoded data
-      const response = await fetch("/api/workorder", {
+      const response = await fetch("/api/workorders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -91,7 +91,7 @@ export function GenerateWorkorderForm({ onNew }: DemoFormProps) {
       }
 
       // Create a new work order in the user's work orders
-      const response = await fetch("/api/user-workorders", {
+      const response = await fetch("/api/workorders/user", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -228,4 +228,3 @@ export function GenerateWorkorderForm({ onNew }: DemoFormProps) {
     </div>
   );
 }
-

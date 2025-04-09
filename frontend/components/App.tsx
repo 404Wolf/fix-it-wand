@@ -12,6 +12,7 @@ import { SignIn } from "../pages/SignIn.tsx";
 import { Profile } from "../pages/Profile.tsx";
 import { Home } from "../pages/Home.tsx";
 import { useAuth } from "../hooks/useAuth.ts";
+import { LoadingSpinner } from "./Loading.tsx";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, checkAuth } = useAuth();
@@ -24,12 +25,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   // Don't redirect immediately while still loading to prevent flashing
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[200px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-amber-700">
-        </div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   if (!isAuthenticated) {
@@ -49,17 +45,7 @@ export function App() {
     checkAuth();
   }, [location.pathname, checkAuth]);
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 mx-auto">
-          </div>
-          <p className="mt-3 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  if (isLoading) return <LoadingSpinner />;
 
   return (
     <div className="max-w-4xl mx-auto p-6 md:p-8 font-sans">

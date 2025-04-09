@@ -1,6 +1,7 @@
 /** @jsxImportSource https://esm.sh/react@19.0.0 */
 import { useState } from "https://esm.sh/react@19.0.0";
 import { WorkOrder } from "../../../backend/db/schemas_http.ts";
+import { Skeleton } from "../Loading.tsx";
 
 type WorkOrdersListProps = {
   workorders: WorkOrder[];
@@ -12,13 +13,13 @@ type WorkOrdersListProps = {
 };
 
 const COLORS = {
-  primary: "bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50",
-  success: "bg-green-600 text-white hover:bg-green-700 disabled:opacity-50",
-  danger: "bg-red-600 text-white hover:bg-red-700 disabled:opacity-50",
-  pending: "bg-yellow-100 text-yellow-800",
-  unsent: "bg-gray-100 text-gray-800",
-  done: "bg-green-100 text-green-800",
-  default: "bg-gray-100 text-gray-800",
+  primary: "bg-green-600 text-white hover:bg-green-700 disabled:opacity-50",
+  success: "bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50",
+  danger: "bg-rose-600 text-white hover:bg-rose-700 disabled:opacity-50",
+  pending: "bg-amber-100 text-amber-800",
+  unsent: "bg-stone-100 text-stone-800",
+  done: "bg-emerald-100 text-emerald-800",
+  default: "bg-stone-200 text-stone-800",
 };
 
 export function WorkOrdersList({
@@ -44,7 +45,6 @@ export function WorkOrdersList({
     }
   };
 
-  // Handler functions with loading state management
   const handleSend = async (id: string) => {
     setActionInProgress(id);
     try {
@@ -75,19 +75,7 @@ export function WorkOrdersList({
   };
 
   if (loading && workorders.length === 0) {
-    return (
-      <div className="p-4 bg-white rounded-lg shadow">
-        <div className="animate-pulse flex space-x-4">
-          <div className="flex-1 space-y-4 py-1">
-            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-            <div className="space-y-2">
-              <div className="h-4 bg-gray-200 rounded"></div>
-              <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <Skeleton />;
   }
 
   return (
@@ -125,6 +113,7 @@ export function WorkOrdersList({
                       Created: {new Date(workorder.createdAt!).toLocaleString()}
                     </p>
                   </div>
+
                   <div className="flex space-x-2">
                     {workorder.status === "unsent" && (
                       <button
@@ -134,9 +123,10 @@ export function WorkOrdersList({
                       >
                         {actionInProgress === workorder.id
                           ? "Sending..."
-                          : "Send"}
+                          : "Email to Self"}
                       </button>
                     )}
+
                     {workorder.status === "pending" && (
                       <button
                         onClick={() => handleComplete(workorder.id)}
@@ -159,6 +149,7 @@ export function WorkOrdersList({
                     </button>
                   </div>
                 </div>
+
                 <div className="mt-2">
                   <p className="text-sm">
                     <div className="bg-gray-100 text-gray-800 rounded-md p-2 mt-1 whitespace-pre-line mb-4">
@@ -176,4 +167,3 @@ export function WorkOrdersList({
     </div>
   );
 }
-

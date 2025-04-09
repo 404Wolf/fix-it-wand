@@ -1,6 +1,7 @@
 README coming soon...
 
 # Todo
+
 - Enroll devices
 - Vectors: https://orm.drizzle.team/docs/guides/vector-similarity-search
 

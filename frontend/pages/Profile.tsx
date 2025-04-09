@@ -28,6 +28,7 @@ const FormField = ({
     <label className="block text-gray-700 mb-1" htmlFor={id}>
       {label}
     </label>
+
     <input
       type="text"
       id={id}
@@ -60,11 +61,13 @@ export function Profile() {
   if (isLoading) {
     return <div className="text-center py-4">Loading profile...</div>;
   }
+
   if (error) {
     return (
       <div className="bg-red-100 text-red-700 p-4 rounded-md">{error}</div>
     );
   }
+
   if (!user) {
     return (
       <div className="text-gray-500 text-center py-4">
@@ -102,14 +105,6 @@ export function Profile() {
       setIsSubmitting(false);
     }
   };
-
-  if (!user) {
-    return (
-      <div className="text-gray-500 text-center py-4">
-        No profile data available
-      </div>
-    );
-  }
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -235,6 +230,7 @@ export function Profile() {
                 )}
               </div>
             </div>
+
             <div className="bg-gray-50 rounded-lg p-4">
               <h3 className="font-medium text-gray-800 mb-3">
                 Personal Info
@@ -255,4 +251,3 @@ export function Profile() {
     </div>
   );
 }
-

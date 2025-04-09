@@ -12,7 +12,7 @@ import {
   JWT_COOKIE_EXPIRATION,
   JWT_SECRET,
 } from "../consts.tsx";
-import { logger } from "../index.http.ts";
+import { backendLogger } from "../index.http.ts";
 import { createUser, getUserByEmail, updateUser } from "../db/users.ts";
 import { createMiddleware } from "npm:hono/factory";
 import { HTTPException } from "npm:hono/http-exception";
@@ -88,7 +88,7 @@ authRoute.post("/request-magic-link", async (c) => {
     const user = await getUserByEmail(email);
     if (user) {
       // If user exists, we can send them a magic link
-      logger.info({ email }, "User exists, sending magic link");
+      backendLogger.info({ email }, "User exists, sending magic link");
 
       // Generate token
       token = await sign({ email }, JWT_SECRET);
@@ -117,14 +117,14 @@ authRoute.post("/request-magic-link", async (c) => {
       html: emailContent,
     }, true); // Send in background
 
-    logger.info({ email }, "Magic link sent");
+    backendLogger.info({ email }, "Magic link sent");
 
     return c.json({
       success: true,
       message: "Magic link sent to your email",
     });
   } catch (error) {
-    logger.error({ error }, "Error sending magic link");
+    backendLogger.error({ error }, "Error sending magic link");
     return c.json({
       success: false,
       message: "Failed to send magic link",
@@ -158,12 +158,12 @@ authRoute.get("/login", async (c) => {
       path: "/",
     });
 
-    logger.info({ email: payload.email }, "User logged in");
+    backendLogger.info({ email: payload.email }, "User logged in");
 
     // Redirect to the specified URL
     return c.redirect(redirectUrl);
   } catch (error) {
-    logger.error({ error }, "Invalid login token");
+    backendLogger.error({ error }, "Invalid login token");
     return c.json({
       success: false,
       message: "Invalid or expired token",
@@ -194,7 +194,7 @@ authRoute.get(
         user,
       });
     } catch (error) {
-      logger.error({ error }, "Error getting user");
+      backendLogger.error({ error }, "Error getting user");
       return c.json({
         success: false,
         message: "Failed to get user information",
@@ -235,7 +235,7 @@ authRoute.put(
         user: updatedUser,
       });
     } catch (error) {
-      logger.error({ error }, "Error updating user profile");
+      backendLogger.error({ error }, "Error updating user profile");
       return c.json({
         success: false,
         message: "Failed to update user profile",
@@ -255,6 +255,6 @@ authRoute.post("/logout", (c) => {
     path: "/",
   });
 
-  logger.info("User logged out");
+  backendLogger.info("User logged out");
   return c.json({ success: true, message: "Logged out successfully" }, 200);
 });

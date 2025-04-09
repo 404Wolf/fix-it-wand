@@ -9,7 +9,7 @@ export async function fetchWorkorders(): Promise<{
   error: string | null;
 }> {
   try {
-    const response = await fetch("/api/user-workorders", {
+    const response = await fetch("/api/workorders/user", {
       credentials: "include",
     });
 
@@ -37,7 +37,7 @@ export async function sendWorkorder(id: string): Promise<{
   error: string | null;
 }> {
   try {
-    const response = await fetch(`/api/user-workorders/${id}/send`, {
+    const response = await fetch(`/api/workorders/user/${id}/send`, {
       method: "POST",
       credentials: "include",
     });
@@ -65,7 +65,7 @@ export async function completeWorkorder(id: string): Promise<{
   error: string | null;
 }> {
   try {
-    const response = await fetch(`/api/user-workorders/${id}/complete`, {
+    const response = await fetch(`/api/workorders/user/${id}/complete`, {
       method: "POST",
       credentials: "include",
     });
@@ -93,7 +93,7 @@ export async function deleteWorkorder(id: string): Promise<{
   error: string | null;
 }> {
   try {
-    const response = await fetch(`/api/user-workorders/${id}`, {
+    const response = await fetch(`/api/workorders/user/${id}`, {
       method: "DELETE",
       credentials: "include",
     });

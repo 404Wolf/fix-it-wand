@@ -1,0 +1,16 @@
+sequenceDiagram
+    actor User
+    actor Wand
+    participant Website
+    
+    Website->>User: Enter email
+    Frontend->>Backend: /request-magic-email
+    Backend->>User: Email link (short-term JWT)
+
+    User->>Frontend: Click link
+    Frontend->>Backend: /login with short-term JWT
+    Backend->>Frontend: Return long-term JWT cookie
+    Frontend->>User: Authenticated
+
+    User->>Backend: Give wand registration number
+
