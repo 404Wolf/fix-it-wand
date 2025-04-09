@@ -14,6 +14,39 @@ export const workorderRoute = new Hono();
 
 workorderRoute.use("*", jwt({ secret: JWT_SECRET, cookie: "auth_token" }));
 
+// Generates a workorder
+workorderRoute.post("/generate", async (c) => {
+  const payload = c.get("jwtPayload");
+
+  backendLogger.info(
+    { email: payload.email },
+    "Work order email generation request",
+  );
+
+  try {
+    const body = await c.req.json();
+    const { imageB64, audioB64, fromName } = body;
+
+    const emailContent = await generateWorkorderEmail({
+      imageB64,
+      audioB64,
+      fromName,
+    });
+
+    return c.json({
+      success: true,
+      email: emailContent,
+    });
+  } catch (error) {
+    backendLogger.error({ error }, "Error generating work order email");
+
+    return c.json({
+      success: false,
+      message: "Failed to generate work order email. " + error,
+    }, 500);
+  }
+});
+
 // Create a user subrouter for workorder routes
 const userWorkorderRoute = new Hono();
 

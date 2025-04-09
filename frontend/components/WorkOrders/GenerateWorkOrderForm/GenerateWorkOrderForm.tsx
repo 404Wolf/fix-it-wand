@@ -44,7 +44,7 @@ export function GenerateWorkorderForm({ onNew }: DemoFormProps) {
 
     try {
       // Submit work order with base64 encoded data
-      const response = await fetch("/api/workorders", {
+      const response = await fetch("/api/workorders/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
