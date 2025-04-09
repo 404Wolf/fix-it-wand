@@ -1,6 +1,7 @@
 import { Hono } from "npm:hono";
 import { authRoute } from "./auth.tsx";
 import { workorderRoute } from "./workorder.ts";
+import { userWorkordersRoute } from "./user-workorders.ts";
 import { logger } from "../index.http.ts";
 import { locationsRoute } from "./locations.ts";
 
@@ -18,5 +19,6 @@ apiRoute.get("/", (c) => {
 
 // Mount routes
 apiRoute.route("/workorder", workorderRoute);
+apiRoute.route("/user-workorders", userWorkordersRoute);
 apiRoute.route("/auth", authRoute);
 apiRoute.route("/locations", locationsRoute);

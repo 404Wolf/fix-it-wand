@@ -16,10 +16,6 @@ locationsRoute.get("/sites", async (c) => {
 locationsRoute.get("/sites/:id", async (c) => {
   const siteId = parseInt(c.req.param("id"));
 
-  if (isNaN(siteId)) {
-    return c.json({ error: "Invalid site ID" }, 400);
-  }
-
   const locations = await getLocationBySiteId(siteId);
   return c.json(locations);
 });
@@ -27,10 +23,6 @@ locationsRoute.get("/sites/:id", async (c) => {
 locationsRoute.get("/nearest", async (c) => {
   const latitude = parseFloat(c.req.query("lat") || "");
   const longitude = parseFloat(c.req.query("lng") || "");
-
-  if (isNaN(latitude) || isNaN(longitude)) {
-    return c.json({ error: "Invalid latitude or longitude parameters" }, 400);
-  }
 
   const nearestLocation = await getNearest(latitude, longitude);
 

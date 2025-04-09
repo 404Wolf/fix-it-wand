@@ -7,8 +7,8 @@ export const VAL_TOWN_API_KEY = Deno.env.get("valtown")!;
 
 export const EmailTemplate = ({ magicLink }) => (
   <div>
-    <h1>Your Magic Login Link</h1>
-    <p>Click the button below to log in:</p>
+    <h1>Fix It Wand Magic Sign In</h1>
+    <p>Click the button below to log in to Fix it Wand:</p>
     <a
       href={magicLink}
       style={{
@@ -27,3 +27,6 @@ export const EmailTemplate = ({ magicLink }) => (
     <p>This link will expire in 15 minutes.</p>
   </div>
 );
+
+export const JWT_COOKIE_EXPIRATION = Math.floor(Date.now() / 1000) +
+  60 * 60 * 24 * 7;

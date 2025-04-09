@@ -7,12 +7,66 @@ import { sign } from "npm:hono/jwt";
 import { renderToString } from "npm:react-dom/server";
 import { Hono } from "npm:hono";
 import { sendEmail } from "../utils.ts";
-import { EmailTemplate, JWT_SECRET } from "../consts.tsx";
+import {
+  EmailTemplate,
+  JWT_COOKIE_EXPIRATION,
+  JWT_SECRET,
+} from "../consts.tsx";
 import { logger } from "../index.http.ts";
 import { createUser, getUserByEmail, updateUser } from "../db/users.ts";
+import { createMiddleware } from "npm:hono/factory";
+import { HTTPException } from "npm:hono/http-exception";
 
-// Create auth route
 export const authRoute = new Hono<{ Variables: JwtVariables }>();
+
+/**
+ * Middleware that attempts JWT authentication and falls back to master bearer token.
+ * Sets jwtPayload in the context if authentication is successful.
+ */
+export const jwtOrMasterAuth = (options: {
+  secret: string;
+  cookie?: string;
+}) => {
+  const jwtMiddleware = jwt(options);
+
+  return createMiddleware<{
+    Variables: JwtVariables;
+  }>(async (c, next) => {
+    try {
+      // Try JWT authentication first
+      await jwtMiddleware(c, next);
+    } catch (_e) {
+      // If JWT fails, check for master bearer token
+      const authHeader = c.req.header("Authorization");
+      const masterToken = Deno.env.get("MASTER_BEARER");
+
+      if (!masterToken) {
+        throw new HTTPException(401, {
+          message: "Master token not configured",
+        });
+      }
+
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        throw new HTTPException(401, { message: "Bearer token required" });
+      }
+
+      const token = authHeader.split(" ")[1];
+
+      if (token !== masterToken) {
+        throw new HTTPException(401, { message: "Invalid token" });
+      }
+
+      // Set a simple payload for master token
+      c.set("jwtPayload", {
+        sub: "master",
+        role: "admin",
+        isMasterToken: true,
+      });
+
+      await next();
+    }
+  });
+};
 
 // Route to request magic link
 authRoute.post("/request-magic-link", async (c) => {
@@ -61,7 +115,7 @@ authRoute.post("/request-magic-link", async (c) => {
       to: email,
       subject: "Your Fix It Wand Magic Link",
       html: emailContent,
-    });
+    }, true); // Send in background
 
     logger.info({ email }, "Magic link sent");
 
@@ -78,7 +132,7 @@ authRoute.post("/request-magic-link", async (c) => {
   }
 });
 
-// Login with token
+// Login with token to get cookie
 authRoute.get("/login", async (c) => {
   const { token, redirectUrl = "/" } = c.req.query();
 
@@ -90,7 +144,7 @@ authRoute.get("/login", async (c) => {
     const sessionToken = await sign(
       {
         email: payload.email,
-        exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7,
+        exp: JWT_COOKIE_EXPIRATION,
       }, // 7 days,
       JWT_SECRET,
     );

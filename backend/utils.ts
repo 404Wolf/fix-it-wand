@@ -7,8 +7,8 @@ type EmailOptions = {
 };
 
 // Send email using Wolf's email sender service
-export async function sendEmail(options: EmailOptions) {
-  const response = await fetch("https://wolf-emailsender.web.val.run", {
+export async function sendEmail(options: EmailOptions, background = false) {
+  const responsePromise = fetch("https://wolf-emailsender.web.val.run", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -19,6 +19,10 @@ export async function sendEmail(options: EmailOptions) {
       html: options.html,
     }),
   });
+
+  if (background) return;
+
+  const response = await responsePromise;
 
   if (!response.ok) {
     const errorData = await response.json();

@@ -1,10 +1,70 @@
 /** @jsxImportSource https://esm.sh/react@19.0.0 */
-import { GenerateWorkOrderForm } from "../components/WorkOrders/GenerateWorkOrderForm/GenerateWorkOrderForm.tsx";
+import { useEffect, useState } from "https://esm.sh/react@19.0.0";
 import { useAuth } from "../hooks/useAuth.ts";
 import { Link } from "https://esm.sh/react-router-dom@7.4.1?deps=react@19.0.0,react-dom@19.0.0";
+import * as api from "../crud/workorders.ts";
+import { WorkOrder } from "../../backend/db/schemas_http.ts";
+import { GenerateWorkorderForm } from "../components/WorkOrders/GenerateWorkOrderForm/GenerateWorkOrderForm.tsx";
+import { WorkOrdersList } from "../components/WorkOrders/WorkOrderList.tsx";
 
 export function Home() {
   const { user } = useAuth();
+  const [workorders, setWorkorders] = useState<WorkOrder[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch workorders
+  const fetchWorkorders = async () => {
+    if (!user) return;
+
+    setLoading(true);
+    const result = await api.fetchWorkorders();
+    setWorkorders(result.workorders);
+    setError(result.error);
+    setLoading(false);
+  };
+
+  // Load workorders when user is available
+  useEffect(() => {
+    if (user) {
+      fetchWorkorders();
+    }
+  }, [user]);
+
+  // Handle new workorder creation
+  const onNewWorkorder = async () => {
+    await fetchWorkorders(); // Refresh the list after a new workorder is created
+  };
+
+  // Handle sending a workorder
+  const handleSendWorkorder = async (id: string) => {
+    const result = await api.sendWorkorder(id);
+    if (result.error) {
+      setError(result.error);
+    } else {
+      await fetchWorkorders();
+    }
+  };
+
+  // Handle completing a workorder
+  const handleCompleteWorkorder = async (id: string) => {
+    const result = await api.completeWorkorder(id);
+    if (result.error) {
+      setError(result.error);
+    } else {
+      await fetchWorkorders();
+    }
+  };
+
+  // Handle deleting a workorder
+  const handleDeleteWorkorder = async (id: string) => {
+    const result = await api.deleteWorkorder(id);
+    if (result.error) {
+      setError(result.error);
+    } else {
+      await fetchWorkorders();
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -39,7 +99,20 @@ export function Home() {
         </p>
       </div>
 
-      <GenerateWorkOrderForm />
+      {user && (
+        <div className="bg-stone-50 rounded-lg shadow-sm border border-gray-200 p-6">
+          <WorkOrdersList
+            workorders={workorders}
+            loading={loading}
+            error={error}
+            onSendWorkorder={handleSendWorkorder}
+            onCompleteWorkorder={handleCompleteWorkorder}
+            onDeleteWorkorder={handleDeleteWorkorder}
+          />
+        </div>
+      )}
+
+      <GenerateWorkorderForm onNew={onNewWorkorder} />
     </div>
   );
 }
