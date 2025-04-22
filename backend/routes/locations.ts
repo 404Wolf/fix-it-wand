@@ -40,9 +40,7 @@ locationsRoute.get("/search", async (c) => {
     return c.json({ error: "Missing search query parameter" }, 400);
   }
 
-  console.log(query)
   const location = await search(query);
-  console.log(location)
 
   if (!location) {
     return c.json({ error: "No matching location found" }, 404);

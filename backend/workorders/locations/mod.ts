@@ -1,7 +1,7 @@
 import OpenAI from "npm:openai";
 import { getDistance } from "https://esm.sh/geolib@3.3.4";
 const API_ROOT =
-  "https://esm.town/v/wolf/fixItWand@70-location/backend/workorders/locations";
+  "https://esm.town/v/wolf/fixItWand/backend/workorders/locations";
 
 const openai = new OpenAI();
 
@@ -161,16 +161,11 @@ export async function search(query: string): Promise<Location | null> {
     // Get all sites
     const sites = await getSites();
 
-    let allLocations: Location[] = [];
-
     // Get locations for each site
+    let allLocations: Location[] = [];
     for (const site of sites) {
       const locations = await getLocationBySiteId(site.SiteId);
       allLocations = [...allLocations, ...locations];
-    }
-
-    if (allLocations.length === 0) {
-      return null;
     }
 
     // Create a simplified list of location names and IDs
