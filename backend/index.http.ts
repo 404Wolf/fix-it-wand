@@ -2,8 +2,8 @@ import { serveFile } from "https://esm.town/v/std/utils@65-main/index.ts";
 import { Hono } from "npm:hono";
 import { cors } from "npm:hono/cors";
 import { pino } from "npm:pino";
-import { authRoute } from "./routes/auth.tsx";
 import { apiRoute } from "./routes/api.ts";
+import { authRoute } from "./routes/auth.tsx";
 
 export const backendLogger = pino();
 

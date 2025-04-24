@@ -1,5 +1,5 @@
 {
-  description = "Fix it wand!";
+  description = "Fix it wand";
 
   inputs = {
     flake-utils.url = "github:numtide/flake-utils";

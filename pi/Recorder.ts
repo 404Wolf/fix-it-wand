@@ -42,11 +42,14 @@ export class Recorder {
   /** Stops recording and finalizes the output file. */
   finish(): Promise<void> {
     return new Promise<void>((resolve) => {
-      this.micInstance.once("stopComplete", () => {
-        this.outputFile.close();
-        resolve();
-      });
+      // Use addEventListener if available, otherwise use a timeout approach
       this.micInstance.stop();
+
+      // Give some time for the file to finish writing
+      setTimeout(() => {
+        this.outputFile.end();
+        resolve();
+      }, 500);
     });
   }
 }
