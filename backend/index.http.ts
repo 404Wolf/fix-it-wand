@@ -3,7 +3,7 @@ import { Hono } from "npm:hono";
 import { cors } from "npm:hono/cors";
 import { pino } from "npm:pino";
 import { apiRoute } from "./routes/api.ts";
-import { authRoute } from "./routes/auth.tsx";
+import { authRoute } from "./routes/auth/magic-auth.tsx";
 
 export const backendLogger = pino();
 

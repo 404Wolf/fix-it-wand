@@ -1,22 +1,19 @@
 import { Hono } from "npm:hono";
-import { authRoute } from "./auth.tsx";
-import { workorderRoute } from "./workorder.ts";
+import { workorderRoute } from "./api/workorder.ts";
 import { backendLogger } from "../index.http.ts";
-import { locationsRoute } from "./locations.ts";
+import { authRoute } from "./auth/mod.ts";
+import { locationsRoute } from "./api/locations.ts";
 
-// Create API router
-export const apiRoute = new Hono();
+export const apiRoute = new Hono()
+  .get("/", (c) => {
+    backendLogger.info("Status check");
+    return c.json({
+      status: "ok",
+      time: new Date().toISOString(),
+    });
+  })
+  .route("/workorders", workorderRoute)
+  .route("/auth", authRoute)
+  .route("/locations", locationsRoute);
 
-// Root endpoint with basic status
-apiRoute.get("/", (c) => {
-  backendLogger.info("API status check");
-  return c.json({
-    status: "ok",
-    time: new Date().toISOString(),
-  });
-});
-
-// Mount routes
-apiRoute.route("/workorders", workorderRoute);
-apiRoute.route("/auth", authRoute);
-apiRoute.route("/locations", locationsRoute);
+export type ApiRoute = typeof apiRoute;
