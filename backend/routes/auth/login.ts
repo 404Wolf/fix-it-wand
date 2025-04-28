@@ -1,30 +1,29 @@
-import { Context } from "npm:hono";
-import { setCookie } from "npm:hono/cookie";
-import { sign } from "npm:hono/jwt";
-import { JWT_COOKIE_EXPIRATION, JWT_SECRET } from "../../consts.tsx";
-import { backendLogger } from "../../index.http.ts";
-import { getUserByEmail, updateUser } from "../../db/users.ts";
-import { z } from "npm:zod";
-import { zValidator } from "npm:@hono/zod-validator";
-import { HTTPException } from "npm:hono/http-exception";
+import { Context, Hono } from "https://esm.sh/hono@4.7.7?target=deno";
+import { setCookie } from "https://esm.sh/hono@4.7.7/cookie?deps=hono&target=deno";
+import { sign } from "https://esm.sh/hono@4.7.7/jwt?deps=hono@4.7.7?target=deno";
+import { z } from "https://esm.sh/zod@3.24.3";
+import { zValidator } from "https://esm.sh/@hono/zod-validator@0.4.3?deps=hono@4.7.7,zod@3.24.3&target=deno";
 import { verifyJwt } from "./utils.ts";
-import { Hono } from "npm:hono";
+import env from "../../env.ts";
+
+const JWT_COOKIE_EXPIRATION = 60 * 60 * 24 * 7;
 
 export const loginRoute = new Hono()
   .get(
     "/login",
     zValidator(
-      "json",
+      "query",
       z.object({
         token: z.string(),
         redirectUrl: z.string().optional().default("/"),
       }),
       async (val, c) => {
         const { token, redirectUrl } = val.data;
+        console.log("Token:", token);
+        console.log("Redirect URL:", redirectUrl);
+        const { email } = await verifyJwt(token, env.JWT_SECRET);
 
-        const { email } = await verifyJwt(token, JWT_SECRET);
-
-        const jwt = await sign({ email }, JWT_SECRET);
+        const jwt = await sign({ email }, env.JWT_SECRET);
 
         setCookie(c, "auth_token", jwt, {
           httpOnly: true,
@@ -34,69 +33,7 @@ export const loginRoute = new Hono()
           path: "/",
         });
 
-        backendLogger.info({ email }, "User logged in with magic link");
         return c.redirect(redirectUrl);
-      },
-    ),
-  )
-  .get(
-    "/me",
-    zValidator(
-      "json",
-      z.object({
-        jwtPayload: z.object({
-          email: z.string().email(),
-        }),
-      }),
-      async (val, c) => {
-        const { jwtPayload } = val.data;
-
-        const user = await getUserByEmail(jwtPayload.email);
-
-        if (!user) {
-          return c.json({
-            success: false,
-            message: "User not found",
-          }, 404);
-        }
-
-        return c.json({ success: true, user });
-      },
-    ),
-  )
-  .put(
-    "/me",
-    zValidator(
-      "json",
-      z.object({
-        firstName: z.string().optional(),
-        lastName: z.string().optional(),
-        email: z.string(),
-      }),
-      async (val, _c) => {
-        const { firstName, lastName, email } = val.data;
-
-        try {
-          const user = await getUserByEmail(email);
-
-          if (!user) throw new HTTPException(404, { cause: "User not found" });
-
-          const updatedUser = await updateUser(user.id, {
-            firstName,
-            lastName,
-          });
-
-          return Response.json({
-            success: true,
-            user: updatedUser,
-          });
-        } catch (error) {
-          backendLogger.error({ error }, "Error updating user profile");
-          return Response.json({
-            success: false,
-            message: "Failed to update user profile",
-          }, { status: 500 });
-        }
       },
     ),
   )
@@ -109,6 +46,5 @@ export const loginRoute = new Hono()
       path: "/",
     });
 
-    backendLogger.info("User logged out");
     return c.json({ success: true, message: "Logged out successfully" }, 200);
   });

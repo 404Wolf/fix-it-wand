@@ -3,6 +3,8 @@ import { useState } from "https://esm.sh/react@19.0.0";
 import { AudioRecorder } from "./AudioRecorder.tsx";
 import { ImageUploader } from "./ImageUploader.tsx";
 import { useAuth } from "../../../hooks/useAuth.ts";
+import { client } from "../../../hono.ts";
+import { useMutation } from "https://esm.sh/@tanstack/react-query@5.74.7?deps=react@19.0.0";
 
 type EmailData = {
   subject: string;
@@ -17,14 +19,99 @@ export function GenerateWorkorderForm({ onNew }: DemoFormProps) {
   const { user, checkAuth } = useAuth();
 
   const [error, setError] = useState<string | null>(null);
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [generatedEmail, setGeneratedEmail] = useState<EmailData | null>(null);
   const [savedWorkOrderId, setSavedWorkOrderId] = useState<string | null>(null);
-
   const [imageB64, setImageB64] = useState<string | null>(null);
   const [audioB64, setAudioB64] = useState<string | null>(null);
+
+  // Generate workorder email mutation
+  const generateEmailMutation = useMutation<
+    { success: boolean; email?: EmailData; error?: string },
+    Error,
+    void
+  >({
+    mutationFn: async () => {
+      if (!audioB64 || !imageB64 || !user) {
+        throw new Error("Missing required data");
+      }
+
+      const response = await client.workorders.generate.$post({
+        json: {
+          imageB64,
+          audioB64,
+          fromName: `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
+            user.email,
+        },
+      });
+
+      return response.json();
+    },
+    onSuccess: (data) => {
+      if (data.success && data.email) {
+        setGeneratedEmail(data.email);
+      } else {
+        throw new Error(data.error || "Invalid response");
+      }
+    },
+    onError: (err) => {
+      console.error("Error:", err);
+      setError(
+        err instanceof Error ? err.message : "An unknown error occurred",
+      );
+    },
+  });
+
+  // Save workorder mutation
+  const saveWorkorderMutation = useMutation<
+    { success: boolean; workorder?: { id: string }; error?: string },
+    Error,
+    void
+  >({
+    mutationFn: async () => {
+      if (!generatedEmail) {
+        throw new Error("No work order generated");
+      }
+
+      // Refresh auth state to ensure we have the latest user data
+      await checkAuth();
+
+      if (!user) {
+        throw new Error("User is not authenticated");
+      }
+
+      const response = await client.workorders.$post({
+        json: {
+          email_subject: generatedEmail.subject,
+          email_body: generatedEmail.body,
+        },
+      });
+
+      return response.json();
+    },
+    onSuccess: (data) => {
+      if (data.success && data.workorder) {
+        setSavedWorkOrderId(data.workorder.id);
+        // Call the onNew callback when a work order is successfully created
+        if (onNew) {
+          onNew();
+        }
+      } else {
+        throw new Error("Invalid response");
+      }
+    },
+    onError: (err) => {
+      console.error("Error saving work order:", err);
+
+      // Handle null value in column "owner_id" error specifically
+      if (err instanceof Error && err.message.includes("owner_id")) {
+        setError("Authentication error: please try logging out and back in");
+      } else {
+        setError(
+          err instanceof Error ? err.message : "Failed to save work order",
+        );
+      }
+    },
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,35 +127,7 @@ export function GenerateWorkorderForm({ onNew }: DemoFormProps) {
       return;
     }
 
-    setIsSubmitting(true);
-
-    try {
-      // Submit work order with base64 encoded data
-      const response = await fetch("/api/workorders/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          imageB64,
-          audioB64,
-          fromName: `${user.firstName} ${user.lastName}`,
-        }),
-        credentials: "include",
-      });
-
-      if (!response.ok) throw new Error("Failed to generate work order");
-
-      const data = await response.json();
-      if (data.success && data.email) {
-        setGeneratedEmail(data.email);
-      } else {
-        throw new Error("Invalid response");
-      }
-    } catch (err) {
-      console.error("Error:", err);
-      setError("An unknown error occurred");
-    } finally {
-      setIsSubmitting(false);
-    }
+    generateEmailMutation.mutate();
   };
 
   const saveWorkOrder = async () => {
@@ -77,63 +136,12 @@ export function GenerateWorkorderForm({ onNew }: DemoFormProps) {
       return;
     }
 
-    setIsSaving(true);
     setError(null);
-
-    try {
-      // Refresh auth state to ensure we have the latest user data
-      await checkAuth();
-
-      if (!user) {
-        setError("User is not authenticated");
-        setIsSaving(false);
-        return;
-      }
-
-      // Create a new work order in the user's work orders
-      const response = await fetch("/api/workorders/user", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email_subject: generatedEmail.subject,
-          email_body: generatedEmail.body,
-        }),
-        credentials: "include",
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to save work order");
-      }
-
-      if (data.success && data.workorder) {
-        setSavedWorkOrderId(data.workorder.id);
-        // Call the onNew callback when a work order is successfully created
-        if (onNew) {
-          onNew();
-        }
-      } else {
-        throw new Error("Invalid response");
-      }
-    } catch (err) {
-      console.error("Error saving work order:", err);
-
-      // Handle null value in column "owner_id" error specifically
-      if (err instanceof Error && err.message.includes("owner_id")) {
-        setError("Authentication error: please try logging out and back in");
-      } else {
-        setError(
-          err instanceof Error ? err.message : "Failed to save work order",
-        );
-      }
-    } finally {
-      setIsSaving(false);
-    }
+    saveWorkorderMutation.mutate();
   };
 
   const buttonClass = `w-full px-4 py-2 rounded-md font-medium ${
-    isSubmitting || !audioB64 || !imageB64
+    generateEmailMutation.isPending || !audioB64 || !imageB64
       ? "bg-gray-300 text-gray-500 cursor-not-allowed"
       : "bg-amber-600 hover:bg-amber-700 text-white"
   }`;
@@ -161,10 +169,13 @@ export function GenerateWorkorderForm({ onNew }: DemoFormProps) {
             <div className="pt-3">
               <button
                 type="submit"
-                disabled={isSubmitting || !audioB64 || !imageB64}
+                disabled={generateEmailMutation.isPending || !audioB64 ||
+                  !imageB64}
                 className={buttonClass}
               >
-                {isSubmitting ? "Generating..." : "Generate Work Order Email"}
+                {generateEmailMutation.isPending
+                  ? "Generating..."
+                  : "Generate Work Order Email"}
               </button>
             </div>
           </form>
@@ -196,15 +207,15 @@ export function GenerateWorkorderForm({ onNew }: DemoFormProps) {
             <div className="flex gap-4">
               <button
                 type="button"
-                disabled={isSaving || !!savedWorkOrderId}
+                disabled={saveWorkorderMutation.isPending || !!savedWorkOrderId}
                 onClick={saveWorkOrder}
                 className={`flex-1 px-4 py-2 rounded-md font-medium ${
-                  isSaving || savedWorkOrderId
+                  saveWorkorderMutation.isPending || savedWorkOrderId
                     ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                     : "bg-blue-600 hover:bg-blue-700 text-white"
                 }`}
               >
-                {isSaving
+                {saveWorkorderMutation.isPending
                   ? "Saving..."
                   : savedWorkOrderId
                   ? "Saved"

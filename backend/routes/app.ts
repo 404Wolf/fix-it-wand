@@ -1,12 +1,10 @@
-import { Hono } from "npm:hono";
-import { workorderRoute } from "./api/workorder.ts";
-import { backendLogger } from "../index.http.ts";
+import { Hono } from "https://esm.sh/hono@4.7.7?target=deno";
+import { workorderRoute } from "./api/workorders.ts";
 import { authRoute } from "./auth/mod.ts";
 import { locationsRoute } from "./api/locations.ts";
 
 export const apiRoute = new Hono()
   .get("/", (c) => {
-    backendLogger.info("Status check");
     return c.json({
       status: "ok",
       time: new Date().toISOString(),

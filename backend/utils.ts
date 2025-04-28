@@ -28,6 +28,4 @@ export async function sendEmail(options: EmailOptions, background = false) {
     const errorData = await response.json();
     throw new Error(`Failed to send email: ${JSON.stringify(errorData)}`);
   }
-
-  return await response.json();
 }

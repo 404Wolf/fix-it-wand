@@ -11,38 +11,15 @@ export function SignIn() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { requestMagicLink } = useAuth();
   const location = useLocation();
-  // Get the redirectUrl from location state
   const from = location.state?.from?.pathname || "/";
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleRequestMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
 
-    if (!email) {
-      setErrorMessage("Email is required");
-      return;
-    }
-
     setState("loading");
-
-    try {
-      // Add the redirect URL as a query parameter
-      const result = await requestMagicLink(email, from);
-
-      if (result.success) {
-        setState("sent");
-      } else {
-        setErrorMessage(result.message);
-        setState("idle");
-      }
-    } catch (err) {
-      if (err instanceof Error) {
-        setErrorMessage(
-          "Something went wrong. Please try again. Error: " + err.message,
-        );
-        setState("idle");
-      }
-    }
+    await requestMagicLink(email, from);
+    setState("sent");
   };
 
   return (
@@ -73,7 +50,7 @@ export function SignIn() {
           </div>
         )
         : (
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleRequestMagicLink}>
             <div className="mb-4">
               <label htmlFor="email" className="block mb-2 font-medium">
                 Email

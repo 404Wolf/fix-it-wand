@@ -1,9 +1,14 @@
-import { verify as honoVerify } from "npm:hono/jwt";
+import { verify as honoVerify } from "https://esm.sh/hono@4.7.7/jwt?deps=hono&target=deno";
 
-// Define the payload type for our JWTs
+/**
+ * Standard JWT payload interface that includes required email field
+ */
 export interface JwtPayload {
   email: string;
-  [key: string]: any; // For any additional fields
+  sub?: string;
+  role?: string;
+  isMasterToken?: boolean;
+  [key: string]: any;
 }
 
 /**

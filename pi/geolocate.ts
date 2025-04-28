@@ -1,4 +1,5 @@
-import "jsr:@std/dotenv/load";
+import "https://esm.sh/jsr/@std/dotenv@0.225.3/load";
+import { client } from "./client.ts";
 
 interface GeolocationResponse {
   location: {
@@ -8,6 +9,9 @@ interface GeolocationResponse {
   accuracy: number;
 }
 
+/**
+ * Gets the current location using Google's Geolocation API
+ */
 export async function getLocation(): Promise<GeolocationResponse | null> {
   const networkInterfaces = Deno.networkInterfaces();
   const wifiAccessPoints = networkInterfaces
@@ -15,6 +19,10 @@ export async function getLocation(): Promise<GeolocationResponse | null> {
     .map((iface) => ({ macAddress: iface.mac }));
 
   const apiKey = Deno.env.get("GOOGLE_GEOLOCATION");
+  if (!apiKey) {
+    throw new Error("GOOGLE_GEOLOCATION environment variable is not set");
+  }
+
   const body = { wifiAccessPoints };
 
   const response = await fetch(
@@ -27,4 +35,23 @@ export async function getLocation(): Promise<GeolocationResponse | null> {
   );
 
   return await response.json() as GeolocationResponse;
+}
+
+/**
+ * Gets the nearest location from our API using coordinates
+ */
+export async function getNearestLocation(lat: number, lng: number) {
+  try {
+    const response = await client.locations.nearest.$get({
+      query: { lat: lat.toString(), lng: lng.toString() },
+    });
+    const data = await response.json();
+    if (data === null) {
+      throw new Error("No nearest location found");
+    }
+    return data;
+  } catch (error) {
+    console.error("Error getting nearest location:", error);
+    return null;
+  }
 }

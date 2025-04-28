@@ -1,4 +1,4 @@
-import OpenAI from "npm:openai";
+import OpenAI from "https://esm.sh/openai@4.96.0";
 import { getDistance } from "https://esm.sh/geolib@3.3.4";
 const API_ROOT =
   "https://esm.town/v/wolf/fixItWand/backend/workorders/locations";

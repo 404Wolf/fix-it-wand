@@ -1,28 +1,40 @@
-import { createMiddleware } from "npm:hono/factory";
-import { HTTPException } from "npm:hono/http-exception";
-import { jwt, JwtVariables } from "npm:hono/jwt";
+import { createMiddleware } from "https://esm.sh/hono@4.7.7/factory?deps=hono@4.7.7&target=deno";
+import { HTTPException } from "https://esm.sh/hono@4.7.7/http-exception?deps=hono@4.7.7&target=deno";
+import {
+  jwt,
+  JwtVariables,
+} from "https://esm.sh/hono@4.7.7/jwt?deps=hono@4.7.7&target=deno";
+import env from "../../env.ts";
+import { JwtPayload } from "./utils.ts";
+
+// Extend the JwtVariables to include our typed payload
+export interface AuthVariables extends JwtVariables {
+  jwtPayload: JwtPayload;
+}
 
 /**
  * Middleware that attempts JWT authentication and falls back to master bearer token.
  *
  * Sets jwtPayload in the context if authentication is successful.
  */
-export const jwtOrMasterAuth = (options: {
-  secret: string;
-  cookie?: string;
-}) => {
-  const jwtMiddleware = jwt(options);
+export const protectedRouteMiddleware = (options: { secret: string }) => {
+  const jwtMiddleware = jwt({
+    ...options,
+    cookie: { key: "auth_token" },
+  });
 
   return createMiddleware<{
-    Variables: JwtVariables;
+    Variables: AuthVariables;
   }>(async (c, next) => {
     try {
       // Try JWT authentication first
       await jwtMiddleware(c, next);
-    } catch (_e) {
+    } catch (e) {
+      console.log("JWT authentication failed:", e);
+
       // If JWT fails, check for master bearer token
       const authHeader = c.req.header("Authorization");
-      const masterToken = Deno.env.get("MASTER_BEARER");
+      const masterToken = env.MASTER_BEARER;
 
       if (!masterToken) {
         throw new HTTPException(401, {
@@ -40,11 +52,11 @@ export const jwtOrMasterAuth = (options: {
         throw new HTTPException(401, { message: "Invalid token" });
       }
 
-      // Set a simple payload for master token
       c.set("jwtPayload", {
         sub: "master",
         role: "admin",
         isMasterToken: true,
+        email: env.MASTER_EMAIL,
       });
 
       await next();
