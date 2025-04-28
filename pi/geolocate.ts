@@ -1,5 +1,5 @@
 import "https://esm.sh/jsr/@std/dotenv@0.225.3/load";
-import { client } from "./client.ts";
+import { client } from "./hono.ts";
 
 interface GeolocationResponse {
   location: {

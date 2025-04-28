@@ -12,7 +12,8 @@ export interface AuthVariables extends JwtVariables {
 }
 
 /**
- * Middleware that attempts JWT authentication and falls back to master bearer token.
+ * Middleware that attempts JWT authentication, master bearer token, or using a
+ * Wand-Id header for a valid wand.
  *
  * Sets jwtPayload in the context if authentication is successful.
  */
@@ -35,30 +36,45 @@ export const protectedRouteMiddleware = (options: { secret: string }) => {
       const authHeader = c.req.header("Authorization");
       const masterToken = env.MASTER_BEARER;
 
+      if (authHeader && authHeader.startsWith("Bearer ")) {
+        const token = authHeader.split(" ")[1];
+
+        if (masterToken && token === masterToken) {
+          c.set("jwtPayload", {
+            sub: "master",
+            role: "admin",
+            isMasterToken: true,
+            email: env.MASTER_EMAIL,
+          });
+
+          await next();
+          return;
+        }
+      }
+
+      // If master token fails, check for Wand-Id header
+      const wandId = c.req.header("Wand-Id");
+      if (wandId) {
+        // Authenticate using the wand owner's email
+        c.set("jwtPayload", {
+          sub: wandId,
+          role: "user",
+          isMasterToken: false,
+          email: wandId, // Using Wand-Id as the email
+        });
+
+        await next();
+        return;
+      }
+
+      // If all authentication methods fail, return appropriate error
       if (!masterToken) {
         throw new HTTPException(401, {
           message: "Master token not configured",
         });
+      } else {
+        throw new HTTPException(401, { message: "Authentication required" });
       }
-
-      if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        throw new HTTPException(401, { message: "Bearer token required" });
-      }
-
-      const token = authHeader.split(" ")[1];
-
-      if (token !== masterToken) {
-        throw new HTTPException(401, { message: "Invalid token" });
-      }
-
-      c.set("jwtPayload", {
-        sub: "master",
-        role: "admin",
-        isMasterToken: true,
-        email: env.MASTER_EMAIL,
-      });
-
-      await next();
     }
   });
 };

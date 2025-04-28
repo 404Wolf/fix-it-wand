@@ -2,6 +2,7 @@
 
 import { useAuth } from "../hooks/useAuth.ts";
 import { Link } from "https://esm.sh/react-router-dom@7.4.1?deps=react@19.0.0,react-dom@19.0.0";
+import { Wand } from "../components/Wands/Wand.tsx";
 import { GenerateWorkorderForm } from "../components/WorkOrders/GenerateWorkOrderForm/GenerateWorkOrderForm.tsx";
 import { WorkOrdersList } from "../components/WorkOrders/WorkOrderList.tsx";
 import { client } from "../hono.ts";
@@ -94,6 +95,10 @@ export function Home() {
           This is a final project for CSDS377, Introduction to Connected
           Devices, and is a work in progress.
         </p>
+      </div>
+
+      <div>
+        <Wand />
       </div>
 
       {user && (

@@ -45,18 +45,18 @@ export const workorderRoute = new Hono()
         audioB64: z.string(),
         fromName: z.string(),
       }),
-      async (val, c) => {
-        const { imageB64, audioB64, fromName } = val.data;
-
-        const emailContent = await generateWorkorderEmail({
-          imageB64,
-          audioB64,
-          fromName,
-        });
-
-        return c.json({ email: emailContent }, 200);
-      },
     ),
+    async (c) => {
+      const { imageB64, audioB64, fromName } = c.req.valid("json");
+
+      const emailContent = await generateWorkorderEmail({
+        imageB64,
+        audioB64,
+        fromName,
+      });
+
+      return c.json({ email: emailContent }, 200);
+    },
   )
   .get(
     "/",
@@ -84,99 +84,99 @@ export const workorderRoute = new Hono()
         email_subject: z.string().min(1, "Email subject is required"),
         email_body: z.string().min(1, "Email body is required"),
       }),
-      async (val, c) => {
-        const { email_subject, email_body } = val.data;
-        const jwtPayload = c.get("jwtPayload");
-
-        const userEmail = jwtPayload.email;
-        const user = await getUserByEmail(userEmail);
-        const userId = user.id;
-
-        const workorder = await db.insert(workordersTable).values({
-          id: nanoid(),
-          owner: userId,
-          email_subject,
-          email_body,
-          status: "unsent",
-        }).returning();
-
-        return c.json({ workorder: workorder[0] }, 201);
-      },
     ),
+    async (c) => {
+      const jwtPayload = c.get("jwtPayload");
+      const userEmail = jwtPayload.email;
+      const user = await getUserByEmail(userEmail);
+      const userId = user.id;
+
+      const { email_subject, email_body } = c.req.valid("json");
+
+      const workorder = await db.insert(workordersTable).values({
+        id: nanoid(),
+        owner: userId,
+        email_subject,
+        email_body,
+        status: "unsent",
+      }).returning();
+
+      return c.json({ workorder: workorder[0] }, 201);
+    },
   )
   .get(
     "/:id",
     zValidator(
       "param",
       z.object({ id: z.string() }),
-      async (val, c) => {
-        const { id: workorderId } = val.data;
-        const jwtPayload = c.get("jwtPayload");
-        const userEmail = jwtPayload.email;
-        const user = await getUserByEmail(userEmail);
-
-        const workorder = await findAndValidateWorkorder(
-          workorderId,
-          user.id,
-        );
-
-        await sendEmail({
-          to: userEmail,
-          subject: workorder.email_subject,
-          text: workorder.email_body,
-        });
-
-        const updatedWorkorder = await db.update(workordersTable)
-          .set({ status: "pending" })
-          .where(eq(workordersTable.id, workorderId))
-          .returning();
-
-        return c.json({ workorder: updatedWorkorder[0] });
-      },
     ),
+    async (c) => {
+      const jwtPayload = c.get("jwtPayload");
+      const userEmail = jwtPayload.email;
+      const user = await getUserByEmail(userEmail);
+
+      const { id: workorderId } = c.req.valid("param");
+
+      const workorder = await findAndValidateWorkorder(
+        workorderId,
+        user.id,
+      );
+
+      await sendEmail({
+        to: userEmail,
+        subject: workorder.email_subject,
+        text: workorder.email_body,
+      });
+
+      const updatedWorkorder = await db.update(workordersTable)
+        .set({ status: "pending" })
+        .where(eq(workordersTable.id, workorderId))
+        .returning();
+
+      return c.json({ workorder: updatedWorkorder[0] });
+    },
   )
   .post(
     "/:id/complete",
     zValidator(
       "param",
       z.object({ id: z.string() }),
-      async (val, c) => {
-        const jwtPayload = c.get("jwtPayload");
-        const userEmail = jwtPayload.email;
-        const user = await getUserByEmail(userEmail);
-        const workorderId = val.data.id;
-
-        await findAndValidateWorkorder(workorderId, user.id);
-
-        const updatedWorkorder = await db.update(workordersTable)
-          .set({ status: "done" })
-          .where(eq(workordersTable.id, workorderId))
-          .returning();
-
-        return c.json({
-          success: true,
-          workorder: updatedWorkorder[0],
-        }, 200);
-      },
     ),
+    async (c) => {
+      const jwtPayload = c.get("jwtPayload");
+      const userEmail = jwtPayload.email;
+      const user = await getUserByEmail(userEmail);
+      const { id: workorderId } = c.req.valid("param");
+
+      await findAndValidateWorkorder(workorderId, user.id);
+
+      const updatedWorkorder = await db.update(workordersTable)
+        .set({ status: "done" })
+        .where(eq(workordersTable.id, workorderId))
+        .returning();
+
+      return c.json({
+        workorder: updatedWorkorder[0],
+      }, 200);
+    },
   )
   .delete(
     "/:id",
     zValidator(
       "param",
       z.object({ id: z.string() }),
-      async (val, c) => {
-        const { id: workorderId } = val.data;
-        const jwtPayload = c.get("jwtPayload");
-        const userEmail = jwtPayload.email;
-        const user = await getUserByEmail(userEmail);
-
-        await findAndValidateWorkorder(workorderId, user.id);
-
-        await db.delete(workordersTable)
-          .where(eq(workordersTable.id, workorderId));
-
-        return c.json({ message: "Workorder deleted successfully" });
-      },
     ),
+    async (c) => {
+      const { id: workorderId } = c.req.valid("param");
+      const jwtPayload = c.get("jwtPayload");
+      const userEmail = jwtPayload.email;
+      const user = await getUserByEmail(userEmail);
+
+      await findAndValidateWorkorder(workorderId, user.id);
+
+      await db.delete(workordersTable)
+        .where(eq(workordersTable.id, workorderId));
+
+      return c.json({ message: "Workorder deleted successfully" });
+    },
   );

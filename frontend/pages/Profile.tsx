@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "https://esm.sh/react@19.0.0";
 import { useAuth } from "../hooks/useAuth.ts";
+import { Wand } from "../components/Wands/Wand.tsx";
 
 const ProfileField = (
   { label, value }: { label: string; value: React.ReactNode },
@@ -191,6 +192,8 @@ export function Profile() {
         )
         : (
           <div className="space-y-6">
+            <Wand />
+
             <div className="bg-gray-50 rounded-lg p-4">
               <h3 className="font-medium text-gray-800 mb-3">
                 Account Info

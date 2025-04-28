@@ -29,3 +29,15 @@ export async function sendEmail(options: EmailOptions, background = false) {
     throw new Error(`Failed to send email: ${JSON.stringify(errorData)}`);
   }
 }
+
+import { generate } from "https://esm.sh/random-words@2.0.1";
+
+export function generatePassphrase(wordsPerPassphrase = 4, separator = "-") {
+  const words = generate({ exactly: wordsPerPassphrase });
+  return Array.isArray(words) ? words.join(separator) : words;
+}
+
+export function generateWords(wordCount = 4) {
+  const words = generate({ exactly: wordCount });
+  return Array.isArray(words) ? words : [words];
+}

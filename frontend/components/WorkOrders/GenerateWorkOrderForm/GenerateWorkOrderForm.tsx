@@ -44,7 +44,12 @@ export function GenerateWorkorderForm({ onNew }: DemoFormProps) {
         },
       });
 
-      return response.json();
+      const data = await response.json();
+      return {
+        success: true,
+        email: data.email as EmailData,
+        error: undefined,
+      };
     },
     onSuccess: (data) => {
       if (data.success && data.email) {
@@ -141,7 +146,8 @@ export function GenerateWorkorderForm({ onNew }: DemoFormProps) {
   };
 
   const buttonClass = `w-full px-4 py-2 rounded-md font-medium ${
-    generateEmailMutation.isPending || !audioB64 || !imageB64
+    generateEmailMutation.isPending || !audioB64 ||
+      !imageB64
       ? "bg-gray-300 text-gray-500 cursor-not-allowed"
       : "bg-amber-600 hover:bg-amber-700 text-white"
   }`;
@@ -210,7 +216,8 @@ export function GenerateWorkorderForm({ onNew }: DemoFormProps) {
                 disabled={saveWorkorderMutation.isPending || !!savedWorkOrderId}
                 onClick={saveWorkOrder}
                 className={`flex-1 px-4 py-2 rounded-md font-medium ${
-                  saveWorkorderMutation.isPending || savedWorkOrderId
+                  saveWorkorderMutation.isPending ||
+                    savedWorkOrderId
                     ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                     : "bg-blue-600 hover:bg-blue-700 text-white"
                 }`}
@@ -231,7 +238,7 @@ export function GenerateWorkorderForm({ onNew }: DemoFormProps) {
                 }}
                 className="flex-1 px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700"
               >
-                Submit Another Work Order
+                Generate Another Work Order
               </button>
             </div>
           </div>

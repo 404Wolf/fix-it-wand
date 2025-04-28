@@ -24,10 +24,10 @@ export const usersTable = pgTable("users", {
 
 export const wandsTable = pgTable("wands", {
   id: text("id").primaryKey(),
-  type: text("type").notNull(),
-  core: text("core").notNull(),
   owner: text("owner_id").references(() => usersTable.id),
   createdAt: timestamp("created_at").defaultNow(),
+  verified: boolean("verified").default(false),
+  verificationCode: text("verification_code"),
 });
 
 export const workordersTable = pgTable("workorders", {
