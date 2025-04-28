@@ -41,8 +41,8 @@ export const workorderRoute = new Hono()
     zValidator(
       "json",
       z.object({
-        imageB64: z.string(),
-        audioB64: z.string(),
+        imageB64: z.string().optional(),
+        audioB64: z.string().optional(),
         fromName: z.string(),
       }),
     ),
