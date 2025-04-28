@@ -1,6 +1,8 @@
 /** @jsxImportSource https://esm.sh/react@19.0.0 */
+
 import { useEffect, useState } from "https://esm.sh/react@19.0.0";
 import { useAuth } from "../hooks/useAuth.ts";
+import { Wand } from "../components/Wands/Wand.tsx";
 
 const ProfileField = (
   { label, value }: { label: string; value: React.ReactNode },
@@ -34,14 +36,15 @@ const FormField = ({
       id={id}
       value={value}
       onChange={onChange}
-      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500"
+      className={`w-full p-2 border border-gray-300 rounded-md focus:outline-none
+        focus:ring-1 focus:ring-amber-500 focus:border-amber-500`}
       disabled={disabled}
     />
   </div>
 );
 
 export function Profile() {
-  const { user, isLoading, error, updateProfile } = useAuth();
+  const { user, isLoading, updateProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -60,12 +63,6 @@ export function Profile() {
 
   if (isLoading) {
     return <div className="text-center py-4">Loading profile...</div>;
-  }
-
-  if (error) {
-    return (
-      <div className="bg-red-100 text-red-700 p-4 rounded-md">{error}</div>
-    );
   }
 
   if (!user) {
@@ -92,7 +89,7 @@ export function Profile() {
         setIsEditing(false);
       } else {
         setUpdateStatus({
-          message: result.message || "Failed to update profile",
+          message: "Failed to update profile",
           type: "error",
         });
       }
@@ -135,7 +132,10 @@ export function Profile() {
 
       <div className="mb-8">
         <div className="flex items-center mb-6">
-          <div className="w-16 h-16 bg-stone-500 text-white rounded-full flex items-center justify-center text-2xl font-bold mr-4">
+          <div
+            className={`w-16 h-16 bg-stone-500 text-white rounded-full flex
+            items-center justify-center text-2xl font-bold mr-4`}
+          >
             {(user.firstName?.[0] || user.email[0])
               .toUpperCase()}
           </div>
@@ -192,6 +192,8 @@ export function Profile() {
         )
         : (
           <div className="space-y-6">
+            <Wand />
+
             <div className="bg-gray-50 rounded-lg p-4">
               <h3 className="font-medium text-gray-800 mb-3">
                 Account Info

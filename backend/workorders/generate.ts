@@ -1,4 +1,4 @@
-import OpenAI from "npm:openai";
+import OpenAI from "https://esm.sh/openai@4.96.0";
 import { search } from "./locations/mod.ts";
 
 const openai = new OpenAI();
@@ -144,7 +144,7 @@ info.`
   // Add the user message with content to messages array
   messages.push({
     role: "user",
-    content: userContent,
+    content: userContent as any, // Type assertion to fix TypeScript issues
   });
 
   const chatResponse = await openai.chat.completions.create({

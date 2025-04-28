@@ -1,69 +1,67 @@
 /** @jsxImportSource https://esm.sh/react@19.0.0 */
-import { useEffect, useState } from "https://esm.sh/react@19.0.0";
+
 import { useAuth } from "../hooks/useAuth.ts";
 import { Link } from "https://esm.sh/react-router-dom@7.4.1?deps=react@19.0.0,react-dom@19.0.0";
-import * as api from "../crud/workorders.ts";
-import { WorkOrder } from "../../backend/db/schemas_http.ts";
+import { Wand } from "../components/Wands/Wand.tsx";
 import { GenerateWorkorderForm } from "../components/WorkOrders/GenerateWorkOrderForm/GenerateWorkOrderForm.tsx";
 import { WorkOrdersList } from "../components/WorkOrders/WorkOrderList.tsx";
+import { client } from "../hono.ts";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "https://esm.sh/@tanstack/react-query@5.74.7?deps=react@19.0.0";
 
 export function Home() {
   const { user } = useAuth();
-  const [workorders, setWorkorders] = useState<WorkOrder[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  // Fetch workorders
-  const fetchWorkorders = async () => {
-    if (!user) return;
+  const {
+    data: workorders = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["workorders"],
+    queryFn: async () => {
+      const result = await client.workorders.$get({});
+      const data = await result.json();
+      return data.workorders.map((workorder: any) => ({
+        ...workorder,
+        createdAt: new Date(workorder.createdAt!),
+      }));
+    },
+    enabled: Boolean(user),
+  });
 
-    setLoading(true);
-    const result = await api.fetchWorkorders();
-    setWorkorders(result.workorders);
-    setError(result.error);
-    setLoading(false);
-  };
+  const sendWorkorderMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await client.workorders[":id"].$get({ param: { id } });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workorders"] });
+    },
+  });
 
-  // Load workorders when user is available
-  useEffect(() => {
-    if (user) {
-      fetchWorkorders();
-    }
-  }, [user]);
+  const completeWorkorderMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await client.workorders[":id"].complete.$post({ param: { id } });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workorders"] });
+    },
+  });
 
-  // Handle new workorder creation
-  const onNewWorkorder = async () => {
-    await fetchWorkorders(); // Refresh the list after a new workorder is created
-  };
+  const deleteWorkorderMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await client.workorders[":id"].$delete({ param: { id } });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workorders"] });
+    },
+  });
 
-  // Handle sending a workorder
-  const handleSendWorkorder = async (id: string) => {
-    const result = await api.sendWorkorder(id);
-    if (result.error) {
-      setError(result.error);
-    } else {
-      await fetchWorkorders();
-    }
-  };
-
-  // Handle completing a workorder
-  const handleCompleteWorkorder = async (id: string) => {
-    const result = await api.completeWorkorder(id);
-    if (result.error) {
-      setError(result.error);
-    } else {
-      await fetchWorkorders();
-    }
-  };
-
-  // Handle deleting a workorder
-  const handleDeleteWorkorder = async (id: string) => {
-    const result = await api.deleteWorkorder(id);
-    if (result.error) {
-      setError(result.error);
-    } else {
-      await fetchWorkorders();
-    }
+  const onNewWorkorder = () => {
+    queryClient.invalidateQueries({ queryKey: ["workorders"] });
   };
 
   return (
@@ -99,15 +97,19 @@ export function Home() {
         </p>
       </div>
 
+      <div>
+        <Wand />
+      </div>
+
       {user && (
         <div className="bg-stone-50 rounded-lg shadow-sm border border-gray-200 p-6">
           <WorkOrdersList
             workorders={workorders}
-            loading={loading}
-            error={error}
-            onSendWorkorder={handleSendWorkorder}
-            onCompleteWorkorder={handleCompleteWorkorder}
-            onDeleteWorkorder={handleDeleteWorkorder}
+            loading={isLoading}
+            error={error ? String(error) : null}
+            onSendWorkorder={sendWorkorderMutation.mutateAsync}
+            onCompleteWorkorder={completeWorkorderMutation.mutateAsync}
+            onDeleteWorkorder={deleteWorkorderMutation.mutateAsync}
           />
         </div>
       )}

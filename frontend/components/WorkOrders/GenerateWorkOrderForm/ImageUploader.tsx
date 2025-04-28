@@ -4,7 +4,11 @@ import { convertToBase64 } from "../../../utils.ts";
 import Webcam from "https://esm.sh/react-webcam@7.2.0?deps=react@19.0.0";
 import { isMobile } from "https://esm.sh/react-device-detect@2.2.3";
 
-export function ImageUploader({ onImageSelected }) {
+export interface ImageUploaderProps {
+  onImageSelected: (base64Image: string | null) => void;
+}
+
+export function ImageUploader({ onImageSelected }: ImageUploaderProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showCamera, setShowCamera] = useState(false);
