@@ -66,7 +66,7 @@ export function Wand() {
             }`}
             aria-hidden="true"
           />
-          {wandInfo.verified ?  "Verified" : "Pending Verification" }
+          {wandInfo.verified ? "Verified" : "Pending Verification"}
         </span>
       </div>
 
