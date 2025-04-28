@@ -3,7 +3,11 @@ import { useReactMediaRecorder } from "https://esm.sh/react-media-recorder@1.7.1
 import { useEffect, useState } from "https://esm.sh/react@19.0.0";
 import { convertToBase64 } from "../../../utils.ts";
 
-export function AudioRecorder({ onRecordingComplete }) {
+export interface AudioRecorderProps {
+  onRecordingComplete: (base64Audio: string | null) => void;
+}
+
+export function AudioRecorder({ onRecordingComplete }: AudioRecorderProps) {
   const { status, startRecording, stopRecording, mediaBlobUrl, clearBlobUrl } =
     useReactMediaRecorder({ audio: true });
   const [audioBase64, setAudioBase64] = useState<string | null>(null);

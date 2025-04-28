@@ -1,8 +1,8 @@
-import { Context, Hono } from "https://esm.sh/hono@4.7.7?target=deno";
-import { setCookie } from "https://esm.sh/hono@4.7.7/cookie?deps=hono&target=deno";
-import { sign } from "https://esm.sh/hono@4.7.7/jwt?deps=hono@4.7.7?target=deno";
+import { Context, Hono } from "https://esm.sh/hono@4.7.7";
+import { setCookie } from "https://esm.sh/hono@4.7.7/cookie?deps=hono";
+import { sign } from "https://esm.sh/hono@4.7.7/jwt?deps=hono@4.7.7";
 import { z } from "https://esm.sh/zod@3.24.3";
-import { zValidator } from "https://esm.sh/@hono/zod-validator@0.4.3?deps=hono@4.7.7,zod@3.24.3&target=deno";
+import { zValidator } from "https://esm.sh/@hono/zod-validator@0.4.3?deps=hono@4.7.7,zod@3.24.3";
 import { verifyJwt } from "./utils.ts";
 import env from "../../env.ts";
 
@@ -46,5 +46,5 @@ export const loginRoute = new Hono()
       path: "/",
     });
 
-    return c.json({ success: true, message: "Logged out successfully" }, 200);
+    return c.json({ message: "Logged out successfully" }, 200);
   });

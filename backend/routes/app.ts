@@ -1,9 +1,9 @@
-import { Hono } from "https://esm.sh/hono@4.7.7?target=deno";
+import { Hono } from "https://esm.sh/hono@4.7.7";
 import { workorderRoute } from "./api/workorders.ts";
 import { authRoute } from "./auth/mod.ts";
 import { locationsRoute } from "./api/locations.ts";
 
-export const apiRoute = new Hono()
+export const app = new Hono()
   .get("/", (c) => {
     return c.json({
       status: "ok",
@@ -14,4 +14,4 @@ export const apiRoute = new Hono()
   .route("/auth", authRoute)
   .route("/locations", locationsRoute);
 
-export type ApiRoute = typeof apiRoute;
+export type AppType = typeof app;

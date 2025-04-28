@@ -1,10 +1,10 @@
 /** @jsxImportSource https://esm.sh/react@19.0.0 */
 
-import { COLORS } from "./constants.ts";
+import { STYLES } from "../../../shared/consts.ts";
 
 export function StatusBadge({ status }: { status: string }) {
   const getStatusBadgeColor = (status: string) => {
-    return COLORS[status as keyof typeof COLORS] || COLORS.default;
+    return STYLES[status as keyof typeof STYLES] || STYLES.default;
   };
 
   const formattedStatus = status.charAt(0).toUpperCase() + status.slice(1);

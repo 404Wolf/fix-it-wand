@@ -39,10 +39,11 @@ export function useAuth() {
         json: { email, redirectUrl },
       });
       const data = await resp.json();
-      if (resp.status === 200) {
-        setIsAuthenticated(true);
-        setUser(data.user);
-      }
+      setIsAuthenticated(true);
+      setUser({
+        ...data.user,
+        createdAt: new Date(data.user.createdAt!),
+      });
     } finally {
       setIsLoading(false);
     }
@@ -86,9 +87,12 @@ export function useAuth() {
           lastName: updates.lastName,
         },
       });
-      const data = await response.json() as any;
+      const data = await response.json();
 
-      setUser(data.user);
+      setUser({
+        ...data.user,
+        createdAt: new Date(data.user.createdAt!),
+      });
       return { success: true, user: data.user };
     } finally {
       setIsLoading(false);

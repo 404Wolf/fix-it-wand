@@ -1,4 +1,4 @@
-import { Hono } from "https://esm.sh/hono@4.7.7?target=deno";
+import { Hono } from "https://esm.sh/hono@4.7.7";
 import { generateWorkorderEmail } from "../../workorders/generate.ts";
 import { getUserByEmail } from "../../db/users.ts";
 import { db } from "../../db/mod_http.ts";
@@ -7,8 +7,8 @@ import { asc, desc, eq } from "https://esm.sh/drizzle-orm@0.41.0";
 import { nanoid } from "https://esm.sh/nanoid@5.1.5";
 import { sendEmail } from "../../utils.ts";
 import { z } from "https://esm.sh/zod@3.24.3";
-import { zValidator } from "https://esm.sh/@hono/zod-validator@0.4.3?deps=hono@4.7.7,zod@3.24.3,zod@3.24.3&target=deno";
-import { HTTPException } from "https://esm.sh/hono@4.7.7/http-exception?deps=hono&target=deno";
+import { zValidator } from "https://esm.sh/@hono/zod-validator@0.4.3?deps=hono@4.7.7,zod@3.24.3,zod@3.24.3";
+import { HTTPException } from "https://esm.sh/hono@4.7.7/http-exception?deps=hono";
 import { protectedRouteMiddleware } from "../auth/middlewares.ts";
 import env from "../../env.ts";
 
@@ -22,9 +22,7 @@ async function findAndValidateWorkorder(
   });
 
   if (!workorder) {
-    throw new HTTPException(404, {
-      message: "Workorder not found",
-    });
+    throw new HTTPException(404, { message: "Workorder not found" });
   }
 
   if (!skipOwnerCheck && workorder.owner !== userId) {

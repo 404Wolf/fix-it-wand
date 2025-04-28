@@ -21,8 +21,9 @@ export function recordAndGenerateWorkorder(
     await recorder.finish();
 
     const audio = await Deno.readFile("./recording.wav");
-    const audioBase64 = `data:audio/wav;base64,${Buffer.from(audio).toString("base64")
-      }`;
+    const audioBase64 = `data:audio/wav;base64,${
+      Buffer.from(audio).toString("base64")
+    }`;
 
     // Use the Hono client to make the API call
     const response = await client.workorders.generate.$post({

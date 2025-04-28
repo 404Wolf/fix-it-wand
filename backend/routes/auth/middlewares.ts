@@ -1,13 +1,12 @@
-import { createMiddleware } from "https://esm.sh/hono@4.7.7/factory?deps=hono@4.7.7&target=deno";
-import { HTTPException } from "https://esm.sh/hono@4.7.7/http-exception?deps=hono@4.7.7&target=deno";
+import { createMiddleware } from "https://esm.sh/hono@4.7.7/factory?deps=hono@4.7.7";
+import { HTTPException } from "https://esm.sh/hono@4.7.7/http-exception?deps=hono@4.7.7";
 import {
   jwt,
   JwtVariables,
-} from "https://esm.sh/hono@4.7.7/jwt?deps=hono@4.7.7&target=deno";
+} from "https://esm.sh/hono@4.7.7/jwt?deps=hono@4.7.7";
 import env from "../../env.ts";
 import { JwtPayload } from "./utils.ts";
 
-// Extend the JwtVariables to include our typed payload
 export interface AuthVariables extends JwtVariables {
   jwtPayload: JwtPayload;
 }

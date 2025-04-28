@@ -1,9 +1,9 @@
 /** @jsxImportSource https://esm.sh/react@19.0.0 */
 
+import { STYLES } from "../../../shared/consts.ts";
 import { WorkOrder } from "../../types.ts";
 import { ActionButton } from "./ActionButton.tsx";
 import { StatusBadge } from "./StatusBadge.tsx";
-import { COLORS } from "./constants.ts";
 
 type WorkOrderItemProps = {
   workorder: WorkOrder;
@@ -43,7 +43,7 @@ export function WorkOrderItem({
             <ActionButton
               onClick={() => onSend(workorder.id)}
               disabled={isActionInProgress}
-              colorClass={COLORS.primary}
+              colorClass={STYLES.primary}
               label="Email to Self"
               loadingLabel="Sending..."
               isLoading={isActionInProgress}
@@ -54,7 +54,7 @@ export function WorkOrderItem({
             <ActionButton
               onClick={() => onComplete(workorder.id)}
               disabled={isActionInProgress}
-              colorClass={COLORS.success}
+              colorClass={STYLES.success}
               label="Mark Complete"
               loadingLabel="Updating..."
               isLoading={isActionInProgress}
@@ -64,7 +64,7 @@ export function WorkOrderItem({
           <ActionButton
             onClick={handleDelete}
             disabled={isActionInProgress}
-            colorClass={COLORS.danger}
+            colorClass={STYLES.danger}
             label="Delete"
             loadingLabel="Deleting..."
             isLoading={isActionInProgress}

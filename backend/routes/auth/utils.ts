@@ -1,4 +1,4 @@
-import { verify as honoVerify } from "https://esm.sh/hono@4.7.7/jwt?deps=hono&target=deno";
+import { verify as honoVerify } from "https://esm.sh/hono@4.7.7/jwt?deps=hono";
 
 /**
  * Standard JWT payload interface that includes required email field
@@ -13,6 +13,7 @@ export interface JwtPayload {
 
 /**
  * Verify a JWT token and return a properly typed payload
+ *
  * @param token The JWT token to verify
  * @param secret The secret used to verify the token
  * @returns The typed JWT payload

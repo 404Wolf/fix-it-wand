@@ -1,7 +1,7 @@
-import { Hono } from "https://esm.sh/hono@4.7.7&target=deno";
-import { HTTPException } from "https://esm.sh/hono@4.7.7/http-exception?deps=hono@4.7.7&target=deno";
+import { Hono } from "https://esm.sh/hono@4.7.7";
+import { HTTPException } from "https://esm.sh/hono@4.7.7/http-exception?deps=hono@4.7.7";
 import { z } from "https://esm.sh/zod@3.24.3";
-import { zValidator } from "https://esm.sh/@hono/zod-validator@0.4.3?deps=hono@4.7.7,zod@3.24.3&target=deno";
+import { zValidator } from "https://esm.sh/@hono/zod-validator@0.4.3?deps=hono@4.7.7,zod@3.24.3";
 import {
   getLocationBySiteId,
   getNearest,
@@ -49,12 +49,14 @@ export const locationsRoute = new Hono()
     zValidator(
       "query",
       z.object({ q: z.string() }),
-      async (val, c) => {
-        const location = await search(val.data.q);
-        if (!location) {
-          throw new HTTPException(404, { message: "Location not found" });
-        }
-        return c.json(location);
-      },
     ),
+    async (c) => {
+      const { q: query } = c.req.valid("query");
+
+      const location = await search(query);
+      if (!location) {
+        throw new HTTPException(404, { message: "Location not found" });
+      }
+      return c.json(location);
+    },
   );
