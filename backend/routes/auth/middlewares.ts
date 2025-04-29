@@ -54,6 +54,7 @@ export const protectedRouteMiddleware = (options: { secret: string }) => {
 
       // If master token fails, check for Wand-Id header
       const wandId = c.req.header("Wand-Id");
+      console.log("Wand-Id:", wandId);
       if (wandId) {
         // Authenticate using the wand owner's email
         c.set("jwtPayload", {

@@ -1,10 +1,21 @@
 import { hc } from "https://esm.sh/hono@4.7.7/client?deps=hono@4.7.7";
 import { AppType } from "../backend/routes/app.ts";
 import { API_URL } from "../shared/consts.ts";
-import { getWandId } from "./auth.ts";
+import { readConfig } from "./config.ts";
 
-export const client = hc<AppType>(API_URL + "/api", {
-  headers: {
-    "Wand-Id": await getWandId(),
-  },
-});
+export function getClient() {
+  const config = readConfig();
+  const wandId = config.wandId;
+
+  return hc<AppType>(API_URL + "/api", {
+    headers: {
+      ...(wandId ? { "Wand-Id": wandId } : {}),
+    },
+  });
+}
+
+export function refreshClient() {
+  return getClient();
+}
+
+export const client = getClient();

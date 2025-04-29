@@ -1,5 +1,7 @@
 import { Hono } from "https://esm.sh/hono@4.7.7";
 import OpenAI from "https://esm.sh/openai@4.96.0";
+import { z } from "https://esm.sh/zod@3.24.3";
+import { zValidator } from "https://esm.sh/@hono/zod-validator@0.4.3?deps=hono@4.7.7,zod@3.24.3";
 
 const openai = new OpenAI();
 
@@ -25,14 +27,18 @@ export async function transcribeAudio(audioB64: string): Promise<string> {
 }
 
 export const transcribeRoute = new Hono()
-  .post("/", async (c) => {
-    const body = await c.req.json();
+  .post(
+    "/",
+    zValidator(
+      "json",
+      z.object({
+        audioB64: z.string().url(),
+      }),
+    ),
+    async (c) => {
+      const body = await c.req.valid("json");
+      const transcription = await transcribeAudio(body.audioB64);
 
-    if (!body.audioB64) {
-      return c.json({ error: "Missing audioB64 parameter" }, 400);
-    }
-
-    const transcription = await transcribeAudio(body.audioB64);
-
-    return c.json({ transcription });
-  });
+      return c.json({ transcription });
+    },
+  );
