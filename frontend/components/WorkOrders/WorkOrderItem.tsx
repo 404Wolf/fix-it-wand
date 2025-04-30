@@ -49,11 +49,33 @@ export function WorkOrderItem({ workorder, onChange }: WorkOrderItemProps) {
     setIsDeleting(false);
   };
 
+  const togglePending = async () => {
+    setIsCompleting(true);
+    const currentStatus = workorder.status;
+    let newStatus = "pending" as "pending" | "done" | "unsent";
+
+    if (currentStatus === "pending" || currentStatus === "done") {
+      newStatus = "unsent";
+    }
+
+    await client.workorders[":id"].status.$post({
+      param: { id: workorder.id },
+      json: { status: newStatus },
+    });
+    onChange?.();
+    setIsCompleting(false);
+  };
+
   return (
     <div className="p-4 bg-white rounded-lg shadow flex flex-col">
       <div className="flex justify-between items-center mb-2">
         <div>
-          <StatusBadge status={workorder.status} />
+          <button
+            type="button"
+            onClick={togglePending}
+          >
+            <StatusBadge status={workorder.status} />
+          </button>
           <p className="text-xs text-gray-500 mt-1">
             Created: {new Date(workorder.createdAt!).toLocaleString()}
           </p>
@@ -82,7 +104,7 @@ export function WorkOrderItem({ workorder, onChange }: WorkOrderItemProps) {
               type="button"
               onClick={() => sendEmail(customEmail)}
               disabled={isActionInProgress}
-              className="flex items-center justify-center px-2 bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50"
+              className="flex items-center justify-center px-2 bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 h-full"
               title="Send"
             >
               {isSending ? "..." : <BsSend />}

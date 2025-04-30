@@ -58,7 +58,8 @@ export async function generateWorkorderEmail(
             `You are an assistant that extracts location references from text.
 Extract any building name, room number, or location mentioned in the text.
 Return ONLY the location reference, nothing else. If no location is mentioned,
-return 'No location mentioned'. The location usually isn't the farm.`,
+return 'No location mentioned'. The location usually isn't the farm so be
+careful saying that.`,
         },
         {
           role: "user",

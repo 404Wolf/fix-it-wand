@@ -89,10 +89,8 @@ export const workorderRoute = new Hono()
     zValidator(
       "json",
       z.object({
-        email_subject: z.string().min(1, "Email subject is required")
-          .optional(),
-        email_body: z.string().min(1, "Email body is required").optional(),
-        status: z.enum(["unsent", "pending", "done"]).optional(),
+        email_subject: z.string().min(1, "Email subject is required"),
+        email_body: z.string().min(1, "Email body is required"),
       }),
     ),
     async (c) => {
@@ -101,14 +99,14 @@ export const workorderRoute = new Hono()
       const user = await getUserByEmail(userEmail);
       const userId = user.id;
 
-      const { email_subject, email_body, status } = c.req.valid("json");
+      const { email_subject, email_body } = c.req.valid("json");
 
       const workorder = await db.insert(workordersTable).values({
         id: nanoid(),
         owner: userId,
-        email_subject: email_subject || "No Subject",
-        email_body: email_body || "No Body",
-        status: status || "unsent",
+        email_subject,
+        email_body,
+        status: "unsent",
       }).returning();
 
       return c.json({ workorder: workorder[0] }, 201);

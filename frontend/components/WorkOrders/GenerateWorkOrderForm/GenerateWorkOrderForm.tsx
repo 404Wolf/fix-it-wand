@@ -26,23 +26,20 @@ export function GenerateWorkorderForm({ onNew }: DemoFormProps) {
 
   const generateEmail = async () => {
     setIsGenerating(true);
-    try {
-      if (!audioB64 || !imageB64 || !user) return;
+    if (!audioB64 || !imageB64 || !user) return;
 
-      const response = await client.workorders.generate.$post({
-        json: {
-          imageB64,
-          audioB64,
-          fromName: `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
-            user.email,
-        },
-      });
+    const response = await client.workorders.generate.$post({
+      json: {
+        imageB64,
+        audioB64,
+        fromName: `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
+          user.email,
+      },
+    });
 
-      const data = await response.json();
-      setGeneratedEmail(data.email);
-    } finally {
-      setIsGenerating(false);
-    }
+    const data = await response.json();
+    setGeneratedEmail(data.email);
+    setIsGenerating(false);
   };
 
   const saveWorkorder = async () => {
@@ -72,14 +69,8 @@ export function GenerateWorkorderForm({ onNew }: DemoFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!audioB64 || !imageB64) {
-      return;
-    }
-
-    if (!user) {
-      return;
-    }
-
+    if (!audioB64 || !imageB64) return;
+    if (!user) return;
     await generateEmail();
   };
 
