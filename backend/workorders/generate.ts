@@ -157,7 +157,7 @@ info.`
   const workOrderContent = chatResponse.choices[0].message.content;
 
   const fullBody = `
-CWRU Maintenance,
+CWRU Customer Service,
 
 ${workOrderContent}
 
