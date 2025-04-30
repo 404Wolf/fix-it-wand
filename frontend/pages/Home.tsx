@@ -6,62 +6,42 @@ import { Wand } from "../components/Wands/Wand.tsx";
 import { GenerateWorkorderForm } from "../components/WorkOrders/GenerateWorkOrderForm/GenerateWorkOrderForm.tsx";
 import { WorkOrdersList } from "../components/WorkOrders/WorkOrderList.tsx";
 import { client } from "../hono.ts";
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "https://esm.sh/@tanstack/react-query@5.74.7?deps=react@19.0.0";
+import { useEffect, useState } from "https://esm.sh/react@19.0.0";
+import { WorkOrder } from "../types.ts";
 
 export function Home() {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
+  const [workorders, setWorkorders] = useState<WorkOrder[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const {
-    data: workorders = [],
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ["workorders"],
-    queryFn: async () => {
-      const result = await client.workorders.$get({});
-      const data = await result.json();
-      return data.workorders.map((workorder) => ({
-        ...workorder,
-        createdAt: new Date(workorder.createdAt!),
-      }));
-    },
-    enabled: Boolean(user),
-  });
+  const loadWorkorders = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await client.workorders.$get();
+      const { workorders } = await response.json();
+      setWorkorders(
+        workorders.map((workorder) => ({
+          ...workorder,
+          createdAt: new Date(workorder.createdAt!),
+        })),
+      );
+    } catch (e) {
+      setError("Failed to load workorders.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const sendWorkorderMutation = useMutation({
-    mutationFn: async (id: string, email?: string) => {
-      await client.workorders[":id"].send.$post({ param: { id, email } });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["workorders"] });
-    },
-  });
-
-  const completeWorkorderMutation = useMutation({
-    mutationFn: async (id: string) => {
-      await client.workorders[":id"].complete.$post({ param: { id } });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["workorders"] });
-    },
-  });
-
-  const deleteWorkorderMutation = useMutation({
-    mutationFn: async (id: string) => {
-      await client.workorders[":id"].$delete({ param: { id } });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["workorders"] });
-    },
-  });
+  useEffect(() => {
+    if (user) {
+      loadWorkorders();
+    }
+  }, [user]);
 
   const onNewWorkorder = () => {
-    queryClient.invalidateQueries({ queryKey: ["workorders"] });
+    loadWorkorders();
   };
 
   return (
@@ -91,7 +71,6 @@ export function Home() {
           The Fix It Wand is a handheld IOT wand for Case Western students that
           you wave to submit work orders! It connects to the Asset Essentials
           work order system to let you make work orders with the wave of a wand!
-
           This is a final project for CSDS377, Introduction to Connected
           Devices, and is a work in progress.
         </p>
@@ -105,11 +84,9 @@ export function Home() {
         <div className="bg-stone-50 rounded-lg shadow-sm border border-gray-200 p-6">
           <WorkOrdersList
             workorders={workorders}
-            loading={isLoading}
-            error={error ? String(error) : null}
-            onSendWorkorder={sendWorkorderMutation.mutateAsync}
-            onCompleteWorkorder={completeWorkorderMutation.mutateAsync}
-            onDeleteWorkorder={deleteWorkorderMutation.mutateAsync}
+            loading={loading}
+            error={error}
+            onChange={loadWorkorders}
           />
         </div>
       )}

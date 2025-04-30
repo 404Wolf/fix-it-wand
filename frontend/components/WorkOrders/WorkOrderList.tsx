@@ -1,6 +1,5 @@
 /** @jsxImportSource https://esm.sh/react@19.0.0 */
 
-import { useState } from "https://esm.sh/react@19.0.0";
 import { Skeleton } from "../Loading.tsx";
 import { WorkOrder } from "../../types.ts";
 import { WorkOrderItem } from "./WorkOrderItem.tsx";
@@ -9,33 +8,15 @@ type WorkOrdersListProps = {
   workorders: WorkOrder[];
   loading?: boolean;
   error?: string | null;
-  onSendWorkorder: (id: string) => Promise<void>;
-  onCompleteWorkorder: (id: string) => Promise<void>;
-  onDeleteWorkorder: (id: string) => Promise<void>;
+  onChange?: () => void; // Callback for when any workorder changes
 };
 
 export function WorkOrdersList({
   workorders,
   loading = false,
   error = null,
-  onSendWorkorder,
-  onCompleteWorkorder,
-  onDeleteWorkorder,
+  onChange,
 }: WorkOrdersListProps) {
-  const [actionInProgress, setActionInProgress] = useState<string | null>(null);
-
-  const handleAction = async (
-    id: string,
-    actionFn: (id: string) => Promise<void>,
-  ) => {
-    setActionInProgress(id);
-    try {
-      await actionFn(id);
-    } finally {
-      setActionInProgress(null);
-    }
-  };
-
   if (loading && workorders.length === 0) {
     return <Skeleton />;
   }
@@ -60,10 +41,7 @@ export function WorkOrdersList({
               <WorkOrderItem
                 key={workorder.id}
                 workorder={workorder}
-                onSend={(id) => handleAction(id, onSendWorkorder)}
-                onComplete={(id) => handleAction(id, onCompleteWorkorder)}
-                onDelete={(id) => handleAction(id, onDeleteWorkorder)}
-                actionInProgress={actionInProgress}
+                onChange={onChange}
               />
             ))}
           </div>
