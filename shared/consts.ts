@@ -11,3 +11,5 @@ export const STYLES = {
   done: "bg-emerald-100 text-emerald-800",
   default: "bg-stone-200 text-stone-800",
 };
+
+export const DEFAULT_SEND_TO_EMAIL = "customerservice@case.edu";

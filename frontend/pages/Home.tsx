@@ -25,7 +25,7 @@ export function Home() {
     queryFn: async () => {
       const result = await client.workorders.$get({});
       const data = await result.json();
-      return data.workorders.map((workorder: any) => ({
+      return data.workorders.map((workorder) => ({
         ...workorder,
         createdAt: new Date(workorder.createdAt!),
       }));
@@ -34,8 +34,8 @@ export function Home() {
   });
 
   const sendWorkorderMutation = useMutation({
-    mutationFn: async (id: string) => {
-      await client.workorders[":id"].$get({ param: { id } });
+    mutationFn: async (id: string, email?: string) => {
+      await client.workorders[":id"].send.$post({ param: { id, email } });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["workorders"] });

@@ -3,6 +3,7 @@ import { createWriteStream, WriteStream } from "node:fs";
 import { join } from "node:path";
 import { readFile } from "node:fs/promises";
 import { Buffer } from "node:buffer";
+import logger from "../pino.ts";
 
 type MicOptions = {
   rate?: string;
@@ -36,11 +37,18 @@ export class Recorder {
     this.micInstance = mic(micConfig);
     this.micStream = this.micInstance.getAudioStream();
     this.micStream.pipe(this.outputFile);
+
+    logger.debug({
+      message: "Recorder initialized",
+      micConfig,
+      filePath: this.filePath,
+    });
   }
 
   /** Starts recording. */
   start() {
     this.micInstance.start();
+    logger.info({ message: "Recording started" });
   }
 
   /**
@@ -50,32 +58,41 @@ export class Recorder {
   finish(): Promise<string> {
     return new Promise<string>((resolve, reject) => {
       this.micInstance.stop();
+      logger.info({ message: "Recording stopped" });
 
-      // Give some time for the file to finish writing
       setTimeout(async () => {
         try {
           this.outputFile.end();
 
-          // Read the file as binary data
           const audioBuffer = await readFile(this.filePath);
 
-          // Convert to base64 string with data URI prefix
           const base64Audio = `data:audio/wav;base64,${
             Buffer.from(audioBuffer).toString("base64")
           }`;
 
-          // Clean up the temporary file
           try {
             await Deno.remove(this.filePath);
+            logger.debug({
+              message: "Temporary audio file deleted",
+              filePath: this.filePath,
+            });
           } catch (cleanupError) {
-            console.warn(
-              "Failed to delete temporary audio file:",
-              cleanupError,
+            logger.warn(
+              {
+                message: "Failed to delete temporary audio file",
+                filePath: this.filePath,
+                cleanupError,
+              },
             );
           }
 
+          logger.info({
+            message: "Recording finished",
+            filePath: this.filePath,
+          });
           resolve(base64Audio);
         } catch (error) {
+          logger.error({ message: "Error finishing recording", error });
           reject(error);
         }
       }, 500);

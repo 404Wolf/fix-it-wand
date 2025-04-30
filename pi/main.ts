@@ -1,56 +1,79 @@
 import "https://esm.sh/jsr/@std/dotenv@0.225.3/load";
-import { delay } from "https://esm.sh/jsr/@std/async@1.0.12";
 import { Recorder } from "./utils/Recorder.ts";
-import { generateWorkorder } from "./workorders/generate.ts";
 import { Command } from "https://esm.sh/jsr/@cliffy/command@1.0.0-rc.7";
 import { readConfig, updateConfig } from "./config.ts";
+import { BUTTON_GPIO_PIN } from "./consts.ts";
+import { waitUntilPinStateChange } from "./utils/gpio.ts";
+import { associateWand } from "./auth/associate.ts";
+import { transcribeAudio } from "./utils/misc.ts";
+import pino from "https://esm.sh/pino@8.18.0";
+import { generateWorkOrder } from "./utils/workorders.ts";
 
-// Record audio and generate a workorder
-async function recordAndGenerate() {
-  console.log("Recording audio...");
+const logger = pino({ level: 'debug' });
 
-  // Create recorder with specific device
-  const recorder = new Recorder({
-    device: "plughw:2,0",
-  });
-
-  // Start recording
-  recorder.start();
-
-  // Record for 5 seconds
-  console.log("Speak now... (recording for 5 seconds)");
-  await delay(5000);
-
-  // Stop recording and get the audio as base64
-  console.log("Processing audio...");
-  const audioBase64 = await recorder.finish();
-
-  // Get config for fromName
-  const config = readConfig();
-  const fromName = config.wandId || "FixIt Wand";
-
-  // Generate workorder using the recorded audio
-  console.log("Generating workorder...");
-  const result = await generateWorkorder({
-    audioBase64,
-    fromName,
-  });
-
-  console.log("Workorder generated successfully!");
-  console.log(result);
-}
-
-// Create commands using Cliffy Command properly
 await new Command()
   .name("fixit-wand")
-  .description("FixIt Wand CLI utility")
-  .version("1.0.0")
-  .command("generate-workorder", "Record audio and generate a workorder")
-  .action(recordAndGenerate)
+  .description("FixItWand CLI")
+  .command("daemon", "Run the Fix It Wand daemon")
+  .action(async () => {
+    const config = readConfig();
+    const fromName = config.wandId || "FixIt Wand";
+
+    while (true) {
+      await waitUntilPinStateChange(BUTTON_GPIO_PIN, true);
+      logger.info("Button pressed, starting recording");
+
+      const recorder = new Recorder({ device: "plughw:CARD=Device,DEV=0" });
+      recorder.start();
+
+      await waitUntilPinStateChange(BUTTON_GPIO_PIN, false);
+      logger.info("Button released, finishing recording");
+
+      const audioBase64 = await recorder.finish();
+
+      try {
+        // Transcribe the audio
+        const transcript = await transcribeAudio(audioBase64);
+        logger.debug("Audio transcribed: ", transcript);
+
+        // Make sure we got a transcription
+        if (!transcript) {
+          logger.error("No transcription received");
+          continue;
+        }
+
+        // Check if this is an association request
+        if (transcript.toLocaleLowerCase().includes("associate")) {
+          logger.info("Associate keyword detected, attempting to associate");
+
+          const associateResult = await associateWand({ transcript });
+
+          if (associateResult === true) {
+            logger.info("Wand associated successfully!");
+          } else if (isAssociationError(associateResult)) {
+            logger.error(`Association failed: ${associateResult.error}`);
+          } else {
+            logger.error("Unexpected result from associateWand");
+          }
+        } else {
+          // No association keyword, generate work order
+          logger.info("Generating work order from audio");
+          await generateWorkOrder(audioBase64, fromName);
+        }
+      } catch (error) {
+        logger.error({ error }, "Error processing audio");
+      }
+    }
+  })
   .reset()
   .command("set-wand-id <wandId:string>", "Set the wand ID")
   .action((_, wandId) => {
     updateConfig("wandId", wandId);
-    console.log(`Wand ID set to "${wandId}"`);
+    logger.info(`Wand ID set to "${wandId}"`);
   })
   .parse(Deno.args);
+
+// Helper function to check if the result is an association error
+function isAssociationError(result: unknown): result is { error: string } {
+  return typeof result === "object" && result !== null && "error" in result;
+}

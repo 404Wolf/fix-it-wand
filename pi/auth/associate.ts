@@ -1,38 +1,54 @@
 import { client } from "../hono.ts";
-import { transcribeAudio } from "../utils/misc.ts";
-import { getWandId } from "./meta.ts";
+import { readConfig } from "../config.ts";
+import logger from "../pino.ts";
 
 type AssociationError =
-  | "no_associate_keyword"
   | "wrong_length"
-  | "invalid_code";
+  | "invalid_code"
+  | "association_failed";
 
 /**
  * Associate the wand with a user.
  *
- * Makes an API request with an association code, and, if the association
- * code is valid, associates the wand.
+ * Makes an API request with an association code from the transcript, and,
+ * if the association code is valid, associates the wand.
  */
-export async function associateWand({ base64Audio }: { base64Audio: string }) {
-  const transcription = await transcribeAudio(base64Audio);
+export async function associateWand({ transcript }: { transcript: string }) {
+  try {
+    // Extract the association code - first letter of each word in uppercase
+    const verificationCode = Array.from(
+      transcript.toLowerCase().matchAll(/(\b\w+\b)/g),
+    )
+      .map((match) => match[1].charAt(0).toUpperCase())
+      .slice(1)
+      .join("")
+      .toUpperCase();
 
-  // Make sure that they use the word "associate" in the audio
-  if (!transcription.includes("associate")) {
-    return { error: "no_associate_keyword" };
+    logger.debug({ verificationCode }, "Generated verification code");
+
+    const config = readConfig();
+    logger.debug({ wandId: config.wandId }, "Using wand ID from config");
+
+    logger.debug(
+      { transcript },
+      "Attempting to associate wand with transcript",
+    );
+    const resp = await client.wands.associate.$post({
+      json: {
+        verificationCode: verificationCode,
+        wandId: config.wandId!,
+      },
+    });
+
+    if (resp.ok) {
+      logger.info("Wand association successful");
+      return true;
+    } else {
+      logger.warn({ status: resp.status }, "Wand association failed");
+      return { error: "association_failed" as const };
+    }
+  } catch (error) {
+    logger.error({ error }, "Error during wand association");
+    return { error: "association_failed" as const };
   }
-
-  // Now grab the association code. This is the first letter of all of the words
-  // in the recording, as a all caps string
-  const verificationCode = transcription.split(" ")
-    .map((word) => word.charAt(0).toUpperCase())
-    .join("");
-
-  const resp = await client.wands.associate.$post({
-    json: {
-      verificationCode: verificationCode,
-      wandId: await getWandId(),
-    },
-  });
-
-  return resp.ok;
 }

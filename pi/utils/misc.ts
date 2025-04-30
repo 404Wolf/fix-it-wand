@@ -3,11 +3,14 @@ import { client } from "../hono.ts";
 /**
  * Transcribes base64 encoded audio to text.
  *
- * @param base64Audio - The base64 encoded audio data.
+ * @param audioB64 - The base64 encoded audio data.
  * @returns A promise that resolves to the transcribed text.
  */
-export async function transcribeAudio(base64Audio: string): Promise<string> {
-  const result = await client.transcribe.$post({ json: { base64Audio } });
+export async function transcribeAudio(audioB64: string): Promise<string> {
+  const result = await client.transcribe.$post({ json: { audioB64 } });
+  if (!result.ok) {
+    throw new Error(`Failed to transcribe audio: ${result.status}`);
+  }
   const { transcription } = await result.json();
   return transcription;
 }

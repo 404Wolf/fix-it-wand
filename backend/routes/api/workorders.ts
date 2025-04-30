@@ -43,16 +43,24 @@ export const workorderRoute = new Hono()
       z.object({
         imageB64: z.string().optional(),
         audioB64: z.string().optional(),
-        fromName: z.string(),
+        fromName: z.string().optional(),
       }),
     ),
     async (c) => {
-      const { imageB64, audioB64, fromName } = c.req.valid("json");
+      let { imageB64, audioB64, fromName } = c.req.valid("json");
+      fromName = fromName || await getUserByEmail(c.get("jwtPayload").email)
+        .then((user) => user.firstName + " " + user.lastName);
+
+      if (fromName === undefined) {
+        throw new HTTPException(500, {
+          message: "Failed to get user name",
+        });
+      }
 
       const emailContent = await generateWorkorderEmail({
         imageB64,
         audioB64,
-        fromName,
+        fromName: fromName,
       });
 
       return c.json({ email: emailContent }, 200);
@@ -75,14 +83,15 @@ export const workorderRoute = new Hono()
 
       return c.json({ workorders });
     },
-  )
-  .post(
+    )
+    .post(
     "/",
     zValidator(
       "json",
       z.object({
-        email_subject: z.string().min(1, "Email subject is required"),
-        email_body: z.string().min(1, "Email body is required"),
+      email_subject: z.string().min(1, "Email subject is required").optional(),
+      email_body: z.string().min(1, "Email body is required").optional(),
+      status: z.enum(["unsent", "pending", "done"]).optional(),
       }),
     ),
     async (c) => {
@@ -91,24 +100,27 @@ export const workorderRoute = new Hono()
       const user = await getUserByEmail(userEmail);
       const userId = user.id;
 
-      const { email_subject, email_body } = c.req.valid("json");
+      const { email_subject, email_body, status } = c.req.valid("json");
 
       const workorder = await db.insert(workordersTable).values({
-        id: nanoid(),
-        owner: userId,
-        email_subject,
-        email_body,
-        status: "unsent",
+      id: nanoid(),
+      owner: userId,
+      email_subject: email_subject || "No Subject",
+      email_body: email_body || "No Body",
+      status: status || "unsent",
       }).returning();
 
       return c.json({ workorder: workorder[0] }, 201);
     },
-  )
-  .get(
-    "/:id",
+    )
+    .post(
+    "/:id/send",
     zValidator(
       "param",
-      z.object({ id: z.string() }),
+      z.object({
+      id: z.string(),
+      email: z.string().email("Invalid email address").optional(),
+      }),
     ),
     async (c) => {
       const jwtPayload = c.get("jwtPayload");
@@ -116,6 +128,7 @@ export const workorderRoute = new Hono()
       const user = await getUserByEmail(userEmail);
 
       const { id: workorderId } = c.req.valid("param");
+      const { email } = c.req.valid("param");
 
       const workorder = await findAndValidateWorkorder(
         workorderId,
@@ -123,7 +136,7 @@ export const workorderRoute = new Hono()
       );
 
       await sendEmail({
-        to: userEmail,
+        to: email || userEmail,
         subject: workorder.email_subject,
         text: workorder.email_body,
       });
@@ -134,6 +147,44 @@ export const workorderRoute = new Hono()
         .returning();
 
       return c.json({ workorder: updatedWorkorder[0] });
+    },
+  )
+  .post(
+    "/:id/complete",
+    zValidator(
+      "param",
+      z.object({ id: z.string() }),
+    ),
+  )
+  .post(
+    "/:id/status",
+    zValidator(
+      "param",
+      z.object({ id: z.string() }),
+    ),
+    zValidator(
+      "json",
+      z.object({
+        status: z.enum(["unsent", "pending", "done"]),
+      }),
+    ),
+    async (c) => {
+      const jwtPayload = c.get("jwtPayload");
+      const userEmail = jwtPayload.email;
+      const user = await getUserByEmail(userEmail);
+      const { id: workorderId } = c.req.valid("param");
+      const { status } = c.req.valid("json");
+
+      await findAndValidateWorkorder(workorderId, user.id);
+
+      const updatedWorkorder = await db.update(workordersTable)
+        .set({ status })
+        .where(eq(workordersTable.id, workorderId))
+        .returning();
+
+      return c.json({
+        workorder: updatedWorkorder[0],
+      }, 200);
     },
   )
   .post(

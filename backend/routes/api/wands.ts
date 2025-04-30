@@ -3,7 +3,7 @@ import { HTTPException } from "https://esm.sh/hono@4.7.7/http-exception?deps=hon
 import { z } from "https://esm.sh/zod@3.24.3";
 import { zValidator } from "https://esm.sh/@hono/zod-validator@0.4.3?deps=hono@4.7.7,zod@3.24.3";
 import { getUserByEmail } from "../../db/users.ts";
-import { wandsTable } from "../../db/schemas_http.ts";
+import { usersTable, wandsTable } from "../../db/schemas_http.ts";
 import { db } from "../../db/mod_http.ts";
 import {
   generatePassphrase,
@@ -33,25 +33,23 @@ export const wandsRoute = new Hono()
     const userEmail = jwtPayload.email;
     const user = await getUserByEmail(userEmail);
 
-    // Check if user already has an unverified wand
+    // Check if user already a wand
     const existingWands = await db
       .select()
       .from(wandsTable)
       .where(eq(wandsTable.owner, user.id))
       .execute();
 
-    // Find an unverified wand if it exists
-    const unverifiedWand = existingWands.find((wand) => !wand.verified);
-
-    if (unverifiedWand) {
+    if (existingWands.length > 0) {
+      const existingWand = existingWands[0];
       return c.json({
-        wandId: unverifiedWand.id,
-        verificationCode: unverifiedWand.verificationCode!,
-        mnemonic: unverifiedWand.verificationCode!
+        wandId: existingWand.id,
+        verificationCode: existingWand.verificationCode!,
+        mnemonic: existingWand.verificationCode!
           .split("")
-          .map((char) => wordsStartsWith(char)[0])
+          .map((char: string) => wordsStartsWith(char)[0])
           .join(" "),
-        verified: unverifiedWand.verified!,
+        verified: existingWand.verified!,
       });
     }
 
@@ -71,13 +69,13 @@ export const wandsRoute = new Hono()
       .execute();
 
     return c.json({
-      wandId: newWand[0].id!,
+      wandId: newWand[0].id,
       verificationCode: newWand[0].verificationCode!,
       mnemonic: newWand[0]
         .verificationCode!
         .split("")
-        .map((char) => wordsStartsWith(char)[0])
-        .join(" ")!,
+        .map((char: string) => wordsStartsWith(char)[0])
+        .join(" "),
       verified: newWand[0].verified!,
     });
   })
@@ -91,25 +89,41 @@ export const wandsRoute = new Hono()
       }),
     ),
     async (c) => {
-      const jwtPayload = c.get("jwtPayload");
-      const userEmail = jwtPayload.email;
-      const user = await getUserByEmail(userEmail);
-
       // Get the validated data from the request body
       const { wandId, verificationCode } = c.req.valid("json");
 
-      // Find the wand
+      // Find the wand and join with the users table
       const wand = await db
-        .select()
+        .select({
+          id: wandsTable.id,
+          verified: wandsTable.verified,
+          verificationCode: wandsTable.verificationCode,
+          createdAt: wandsTable.createdAt,
+          owner: wandsTable.owner,
+          user: {
+            id: usersTable.id,
+            email: usersTable.email,
+          },
+        })
         .from(wandsTable)
+        .innerJoin(usersTable, eq(wandsTable.owner, usersTable.id))
         .where(eq(wandsTable.id, wandId))
         .execute();
 
       if (wand.length === 0) return c.notFound();
 
       const targetWand = wand[0];
+      // Ensure the wand belongs to a user
+      if (!targetWand.owner) {
+        throw new HTTPException(403, {
+          message: "This wand does not belong to a user",
+        });
+      }
 
-      assertWandBelongsToUser(targetWand as { owner: string }, user.id);
+      assertWandBelongsToUser(
+        targetWand as { owner: string },
+        targetWand.owner,
+      );
 
       // Check if the wand is already verified
       if (targetWand.verified) {
@@ -119,7 +133,7 @@ export const wandsRoute = new Hono()
       }
 
       // Check if the verification code matches
-      if (targetWand.verificationCode !== verificationCode) {
+      if (targetWand.verificationCode?.toUpperCase() !== verificationCode.toUpperCase()) {
         throw new HTTPException(400, { message: "Invalid verification code" });
       }
 

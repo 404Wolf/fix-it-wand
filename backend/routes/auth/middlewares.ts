@@ -6,6 +6,9 @@ import {
 } from "https://esm.sh/hono@4.7.7/jwt?deps=hono@4.7.7";
 import env from "../../env.ts";
 import { JwtPayload } from "./utils.ts";
+import { db } from "../../db/mod_http.ts";
+import { usersTable, wandsTable } from "../../db/schemas_http.ts";
+import { eq } from "https://esm.sh/drizzle-orm@0.41.0";
 
 export interface AuthVariables extends JwtVariables {
   jwtPayload: JwtPayload;
@@ -52,16 +55,32 @@ export const protectedRouteMiddleware = (options: { secret: string }) => {
         }
       }
 
-      // If master token fails, check for Wand-Id header
+      // First check for Wand-Id header
       const wandId = c.req.header("Wand-Id");
       console.log("Wand-Id:", wandId);
       if (wandId) {
-        // Authenticate using the wand owner's email
+        // Query the wand to see if it's associated; if it is use the associated user email
+        const wand = await db
+          .select({
+            id: wandsTable.id,
+            owner: wandsTable.owner,
+            ownerEmail: usersTable.email,
+          })
+          .from(wandsTable)
+          .innerJoin(usersTable, eq(wandsTable.owner, usersTable.id))
+          .where(eq(wandsTable.id, wandId))
+          .execute();
+
+        let email = "unset";
+        if (wand.length > 0) {
+          // Authenticate using the wand owner's email
+          email = wand[0].ownerEmail || "unset";
+        }
         c.set("jwtPayload", {
           sub: wandId,
           role: "user",
           isMasterToken: false,
-          email: wandId, // Using Wand-Id as the email
+          email: email,
         });
 
         await next();
