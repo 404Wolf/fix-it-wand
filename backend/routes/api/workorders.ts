@@ -149,13 +149,6 @@ export const workorderRoute = new Hono()
     },
   )
   .post(
-    "/:id/complete",
-    zValidator(
-      "param",
-      z.object({ id: z.string() }),
-    ),
-  )
-  .post(
     "/:id/status",
     zValidator(
       "param",
@@ -202,6 +195,42 @@ export const workorderRoute = new Hono()
 
       const updatedWorkorder = await db.update(workordersTable)
         .set({ status: "done" })
+        .where(eq(workordersTable.id, workorderId))
+        .returning();
+
+      return c.json({
+        workorder: updatedWorkorder[0],
+      }, 200);
+    },
+  )
+  .put(
+    "/:id",
+    zValidator(
+      "param",
+      z.object({ id: z.string() }),
+    ),
+    zValidator(
+      "json",
+      z.object({
+        email_subject: z.string().min(1, "Email subject is required"),
+        email_body: z.string().min(1, "Email body is required"),
+      }),
+    ),
+    async (c) => {
+      const jwtPayload = c.get("jwtPayload");
+      const userEmail = jwtPayload.email;
+      const user = await getUserByEmail(userEmail);
+
+      const { id: workorderId } = c.req.valid("param");
+      const { email_subject, email_body } = c.req.valid("json");
+
+      await findAndValidateWorkorder(workorderId, user.id);
+
+      const updatedWorkorder = await db.update(workordersTable)
+        .set({
+          email_subject,
+          email_body,
+        })
         .where(eq(workordersTable.id, workorderId))
         .returning();
 
