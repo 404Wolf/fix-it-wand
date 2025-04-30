@@ -9,7 +9,7 @@ import { transcribeAudio } from "./utils/misc.ts";
 import pino from "https://esm.sh/pino@8.18.0";
 import { generateWorkOrder } from "./utils/workorders.ts";
 
-const logger = pino({ level: 'debug' });
+const logger = pino({ level: "debug" });
 
 await new Command()
   .name("fixit-wand")

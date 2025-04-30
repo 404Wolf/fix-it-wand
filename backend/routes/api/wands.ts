@@ -133,7 +133,10 @@ export const wandsRoute = new Hono()
       }
 
       // Check if the verification code matches
-      if (targetWand.verificationCode?.toUpperCase() !== verificationCode.toUpperCase()) {
+      if (
+        targetWand.verificationCode?.toUpperCase() !==
+          verificationCode.toUpperCase()
+      ) {
         throw new HTTPException(400, { message: "Invalid verification code" });
       }
 

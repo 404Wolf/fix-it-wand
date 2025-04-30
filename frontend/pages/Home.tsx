@@ -13,31 +13,22 @@ export function Home() {
   const { user } = useAuth();
   const [workorders, setWorkorders] = useState<WorkOrder[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const loadWorkorders = async () => {
     setLoading(true);
-    setError(null);
-    try {
-      const response = await client.workorders.$get();
-      const { workorders } = await response.json();
-      setWorkorders(
-        workorders.map((workorder) => ({
-          ...workorder,
-          createdAt: new Date(workorder.createdAt!),
-        })),
-      );
-    } catch (e) {
-      setError("Failed to load workorders.");
-    } finally {
-      setLoading(false);
-    }
+    const response = await client.workorders.$get();
+    const { workorders } = await response.json();
+    setWorkorders(
+      workorders.map((workorder) => ({
+        ...workorder,
+        createdAt: new Date(workorder.createdAt!),
+      })),
+    );
+    setLoading(false);
   };
 
   useEffect(() => {
-    if (user) {
-      loadWorkorders();
-    }
+    if (user) loadWorkorders();
   }, [user]);
 
   const onNewWorkorder = () => {
@@ -63,7 +54,7 @@ export function Home() {
 
       <div className="bg-stone-50 rounded-lg shadow-sm border border-gray-200 p-6">
         <h2 className="text-xl font-medium tracking-tight mb-4">
-          Welcome to the <span className="font-bold">Fix It Wand</span>{" "}
+          Welcome to the <span className="font-bold">Fix It Wand</span>
           control panel!
         </h2>
 
@@ -85,7 +76,6 @@ export function Home() {
           <WorkOrdersList
             workorders={workorders}
             loading={loading}
-            error={error}
             onChange={loadWorkorders}
           />
         </div>

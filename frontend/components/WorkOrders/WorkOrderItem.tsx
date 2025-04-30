@@ -9,7 +9,7 @@ import { BsSend } from "https://esm.sh/react-icons@5.5.0/bs";
 
 type WorkOrderItemProps = {
   workorder: WorkOrder;
-  onChange?: () => void; // Callback for when this workorder changes
+  onChange?: () => void;
 };
 
 export function WorkOrderItem({ workorder, onChange }: WorkOrderItemProps) {
@@ -21,31 +21,21 @@ export function WorkOrderItem({ workorder, onChange }: WorkOrderItemProps) {
   const isActionInProgress = isSending || isCompleting || isDeleting;
 
   const sendEmail = async (email?: string) => {
-    try {
-      setIsSending(true);
-      await client.workorders[":id"].send.$post({
-        param: { id: workorder.id, email: email || customEmail },
-      });
-      onChange?.();
-    } catch (error) {
-      console.error("Failed to send email:", error);
-    } finally {
-      setIsSending(false);
-    }
+    setIsSending(true);
+    await client.workorders[":id"].send.$post({
+      param: { id: workorder.id, email: email || customEmail },
+    });
+    onChange?.();
+    setIsSending(false);
   };
 
   const completeWorkOrder = async () => {
-    try {
-      setIsCompleting(true);
-      await client.workorders[":id"].complete.$post({
-        param: { id: workorder.id },
-      });
-      onChange?.();
-    } catch (error) {
-      console.error("Failed to complete workorder:", error);
-    } finally {
-      setIsCompleting(false);
-    }
+    setIsCompleting(true);
+    await client.workorders[":id"].complete.$post({
+      param: { id: workorder.id },
+    });
+    onChange?.();
+    setIsCompleting(false);
   };
 
   const deleteWorkOrder = async () => {
@@ -53,15 +43,10 @@ export function WorkOrderItem({ workorder, onChange }: WorkOrderItemProps) {
       return;
     }
 
-    try {
-      setIsDeleting(true);
-      await client.workorders[":id"].$delete({ param: { id: workorder.id } });
-      onChange?.();
-    } catch (error) {
-      console.error("Failed to delete workorder:", error);
-    } finally {
-      setIsDeleting(false);
-    }
+    setIsDeleting(true);
+    await client.workorders[":id"].$delete({ param: { id: workorder.id } });
+    onChange?.();
+    setIsDeleting(false);
   };
 
   return (

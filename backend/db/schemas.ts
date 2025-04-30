@@ -1,3 +1,5 @@
+// @ts-nocheck schemas_http is maintained, this is the same but uses bare imports
+
 import { boolean, pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { InferSelectModel } from "drizzle-orm";
 

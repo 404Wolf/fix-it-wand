@@ -4,7 +4,6 @@ import { AudioRecorder } from "./AudioRecorder.tsx";
 import { ImageUploader } from "./ImageUploader.tsx";
 import { useAuth } from "../../../hooks/useAuth.ts";
 import { client } from "../../../hono.ts";
-import { useMutation } from "https://esm.sh/@tanstack/react-query@5.74.7?deps=react@19.0.0";
 
 type EmailData = {
   subject: string;
@@ -18,22 +17,17 @@ type DemoFormProps = {
 export function GenerateWorkorderForm({ onNew }: DemoFormProps) {
   const { user, checkAuth } = useAuth();
 
-  const [error, setError] = useState<string | null>(null);
   const [generatedEmail, setGeneratedEmail] = useState<EmailData | null>(null);
   const [savedWorkOrderId, setSavedWorkOrderId] = useState<string | null>(null);
   const [imageB64, setImageB64] = useState<string | null>(null);
   const [audioB64, setAudioB64] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Generate workorder email mutation
-  const generateEmailMutation = useMutation<
-    { success: boolean; email?: EmailData; error?: string },
-    Error,
-    void
-  >({
-    mutationFn: async () => {
-      if (!audioB64 || !imageB64 || !user) {
-        throw new Error("Missing required data");
-      }
+  const generateEmail = async () => {
+    setIsGenerating(true);
+    try {
+      if (!audioB64 || !imageB64 || !user) return;
 
       const response = await client.workorders.generate.$post({
         json: {
@@ -45,44 +39,18 @@ export function GenerateWorkorderForm({ onNew }: DemoFormProps) {
       });
 
       const data = await response.json();
-      return {
-        success: true,
-        email: data.email as EmailData,
-        error: undefined,
-      };
-    },
-    onSuccess: (data) => {
-      if (data.success && data.email) {
-        setGeneratedEmail(data.email);
-      } else {
-        throw new Error(data.error || "Invalid response");
-      }
-    },
-    onError: (err) => {
-      console.error("Error:", err);
-      setError(
-        err instanceof Error ? err.message : "An unknown error occurred",
-      );
-    },
-  });
+      setGeneratedEmail(data.email);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
-  // Save workorder mutation
-  const saveWorkorderMutation = useMutation<
-    { success: boolean; workorder?: { id: string }; error?: string },
-    Error,
-    void
-  >({
-    mutationFn: async () => {
-      if (!generatedEmail) {
-        throw new Error("No work order generated");
-      }
-
-      // Refresh auth state to ensure we have the latest user data
+  const saveWorkorder = async () => {
+    setIsSaving(true);
+    try {
+      if (!generatedEmail) return;
       await checkAuth();
-
-      if (!user) {
-        throw new Error("User is not authenticated");
-      }
+      if (!user) return;
 
       const response = await client.workorders.$post({
         json: {
@@ -91,63 +59,32 @@ export function GenerateWorkorderForm({ onNew }: DemoFormProps) {
         },
       });
 
-      return response.json();
-    },
-    onSuccess: (data) => {
-      if (data.success && data.workorder) {
-        setSavedWorkOrderId(data.workorder.id);
-        // Call the onNew callback when a work order is successfully created
-        if (onNew) {
-          onNew();
-        }
-      } else {
-        throw new Error("Invalid response");
+      const data = await response.json();
+      setSavedWorkOrderId(data.workorder.id);
+      if (onNew) {
+        onNew();
       }
-    },
-    onError: (err) => {
-      console.error("Error saving work order:", err);
-
-      // Handle null value in column "owner_id" error specifically
-      if (err instanceof Error && err.message.includes("owner_id")) {
-        setError("Authentication error: please try logging out and back in");
-      } else {
-        setError(
-          err instanceof Error ? err.message : "Failed to save work order",
-        );
-      }
-    },
-  });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
 
     if (!audioB64 || !imageB64) {
-      setError("Please record audio and select an image");
       return;
     }
 
     if (!user) {
-      setError("User is not authenticated");
       return;
     }
 
-    generateEmailMutation.mutate();
-  };
-
-  const saveWorkOrder = async () => {
-    if (!generatedEmail) {
-      setError("No work order generated");
-      return;
-    }
-
-    setError(null);
-    saveWorkorderMutation.mutate();
+    await generateEmail();
   };
 
   const buttonClass = `w-full px-4 py-2 rounded-md font-medium ${
-    generateEmailMutation.isPending || !audioB64 ||
-      !imageB64
+    isGenerating || !audioB64 || !imageB64
       ? "bg-gray-300 text-gray-500 cursor-not-allowed"
       : "bg-amber-600 hover:bg-amber-700 text-white"
   }`;
@@ -157,12 +94,6 @@ export function GenerateWorkorderForm({ onNew }: DemoFormProps) {
       <h2 className="text-xl font-medium tracking-tight mb-4">
         Generate a CWRU Work Order!
       </h2>
-
-      {error && (
-        <div className="mb-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded">
-          {error}
-        </div>
-      )}
 
       {!generatedEmail
         ? (
@@ -175,13 +106,10 @@ export function GenerateWorkorderForm({ onNew }: DemoFormProps) {
             <div className="pt-3">
               <button
                 type="submit"
-                disabled={generateEmailMutation.isPending || !audioB64 ||
-                  !imageB64}
+                disabled={isGenerating || !audioB64 || !imageB64}
                 className={buttonClass}
               >
-                {generateEmailMutation.isPending
-                  ? "Generating..."
-                  : "Generate Work Order Email"}
+                {isGenerating ? "Generating..." : "Generate Work Order Email"}
               </button>
             </div>
           </form>
@@ -213,16 +141,15 @@ export function GenerateWorkorderForm({ onNew }: DemoFormProps) {
             <div className="flex gap-4">
               <button
                 type="button"
-                disabled={saveWorkorderMutation.isPending || !!savedWorkOrderId}
-                onClick={saveWorkOrder}
+                disabled={isSaving || !!savedWorkOrderId}
+                onClick={saveWorkorder}
                 className={`flex-1 px-4 py-2 rounded-md font-medium ${
-                  saveWorkorderMutation.isPending ||
-                    savedWorkOrderId
+                  isSaving || savedWorkOrderId
                     ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                     : "bg-blue-600 hover:bg-blue-700 text-white"
                 }`}
               >
-                {saveWorkorderMutation.isPending
+                {isSaving
                   ? "Saving..."
                   : savedWorkOrderId
                   ? "Saved"
