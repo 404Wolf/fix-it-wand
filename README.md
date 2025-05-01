@@ -37,8 +37,6 @@ The Fix It Wand system consists of:
 3. **Record Your First Work Order** - Press and hold the button on your wand and describe the issue
 4. **Send Your Work Order** - Log into the dashboard to review and send your work order
 
-## For Developers
-
 ### Project Structure
 
 - `/backend` - Deno-based API server
