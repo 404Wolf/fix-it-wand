@@ -1,0 +1,14 @@
+[Unit]
+Description=FixItWand Service
+After=network.target
+ 
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi
+ExecStart=/home/pi/fixitwand daemon
+Restart=on-failure
+RestartSec=5
+ 
+[Install]
+WantedBy=multi-user.target

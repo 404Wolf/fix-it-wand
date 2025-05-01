@@ -1,9 +1,0 @@
-{
-  "imports": {
-    "@neondatabase/serverless": "npm:@neondatabase/serverless",
-    "drizzle-orm/neon-http": "npm:drizzle-orm/neon-http",
-    "drizzle-kit": "npm:drizzle-kit@^0.30.5",
-    "drizzle-orm": "npm:drizzle-orm@^0.41.0",
-    "drizzle-orm/pg-core": "npm:drizzle-orm/pg-core"
-  }
-}
