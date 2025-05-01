@@ -14,7 +14,6 @@ import { delay } from "https://esm.sh/jsr/@std/async@1.0.12";
  */
 export async function getPinValue(pinNumber: number): Promise<boolean> {
   // Calculate the GPIO number (base + pin offset)
-  // This example assumes base is 512 as seen in your system
   const baseGpio = 512;
   const gpioNumber = baseGpio + pinNumber;
 
